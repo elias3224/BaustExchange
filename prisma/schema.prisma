@@ -1,0 +1,323 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// A single Prisma enum value can be stored as a string in the DB via @map.
+// All enum members use lowercase names in code AND in the database,
+// matching the spec while remaining ergonomic in TypeScript.
+
+enum UserRole {
+  student @map("student")
+  teacher @map("teacher")
+  admin    @map("admin")
+}
+
+enum UserStatus {
+  active  @map("active")
+  blocked @map("blocked")
+}
+
+enum ListingStatus {
+  pending   @map("pending")
+  active    @map("active")
+  sold      @map("sold")
+  exchanged @map("exchanged")
+  given     @map("given")
+  rejected  @map("rejected")
+  removed   @map("removed")
+}
+
+enum ListingCondition {
+  new
+  like_new
+  good
+  used
+  damaged
+}
+
+enum TransactionType {
+  sell
+  exchange
+  give_away
+  sell_or_exchange
+}
+
+enum WantedStatus {
+  active   @map("active")
+  fulfilled @map("fulfilled")
+  closed   @map("closed")
+}
+
+enum RequestStatus {
+  pending   @map("pending")
+  accepted  @map("accepted")
+  rejected  @map("rejected")
+  cancelled @map("cancelled")
+  completed @map("completed")
+}
+
+enum ReportStatus {
+  pending   @map("pending")
+  reviewed  @map("reviewed")
+  resolved  @map("resolved")
+  dismissed @map("dismissed")
+}
+
+enum NotificationType {
+  REQUEST_NEW      @map("request_new")
+  REQUEST_ACCEPTED @map("request_accepted")
+  REQUEST_REJECTED @map("request_rejected")
+  MESSAGE          @map("message")
+  LISTING_APPROVED @map("listing_approved")
+  ADMIN            @map("admin")
+  MATCH            @map("match")
+}
+
+/**
+ * Application users. Created automatically on first Google login.
+ * Passwords are NEVER stored - Google handles authentication.
+ */
+model User {
+  id            String    @id @default(cuid())
+  googleId      String    @unique
+  name          String
+  email         String    @unique
+  image         String?
+  role          UserRole  @default(student)
+  department    String?
+  studentId     String?
+  phone         String?
+  status        UserStatus @default(active)
+  isVerifiedSeller    Boolean   @default(false)
+  subscriptionPlan    String    @default("free")
+  subscriptionExpires DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  listings      Listing[]
+  requestsSent  ExchangeRequest[] @relation("RequestsSent")
+  requestsRecv  ExchangeRequest[] @relation("RequestsReceived")
+  wantedItems   WantedItem[]
+  messagesSent  Message[] @relation("MessagesSent")
+  messagesRecv  Message[] @relation("MessagesReceived")
+  notifications Notification[]
+  reports       Report[] @relation("ReportsMade")
+  activities    Activity[]
+  payments      Payment[]
+}
+
+/**
+ * Listing categories. Seeded with the defaults from the spec.
+ */
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listings    Listing[]
+  wantedItems WantedItem[]
+}
+
+/**
+ * A single item listing. Can have many images.
+ */
+model Listing {
+  id               String        @id @default(cuid())
+  userId           String
+  categoryId       String
+  title            String
+  description      String
+  condition        ListingCondition
+  transactionType  TransactionType
+  price            Float?
+  quantity         Int           @default(1)
+  exchangeFor      String?
+  location         String?
+  contactPreference String?
+  isFeatured       Boolean       @default(false)
+  featuredUntil    DateTime?
+  status           ListingStatus @default(active)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id])
+  category Category        @relation(fields: [categoryId], references: [id])
+  images   ListingImage[]
+  requests ExchangeRequest[]
+  messages Message[]
+  reports  Report[]
+}
+
+/**
+ * Images stored under /public/uploads (local) - swap for Cloudinary/S3 later.
+ */
+model ListingImage {
+  id        String   @id @default(cuid())
+  listingId String
+  url       String
+  alt       String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+}
+
+/**
+ * An exchange / purchase request from one user to a listing owner.
+ */
+model ExchangeRequest {
+  id          String       @id @default(cuid())
+  listingId   String
+  senderId    String
+  receiverId  String
+  message     String
+  offeredItem String?
+  status      RequestStatus @default(pending)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  listing   Listing @relation(fields: [listingId], references: [id])
+  sender    User    @relation("RequestsSent",     fields: [senderId],   references: [id])
+  receiver  User    @relation("RequestsReceived", fields: [receiverId], references: [id])
+
+  @@index([listingId])
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+/**
+ * Items a user is looking for.
+ */
+model WantedItem {
+  id          String     @id @default(cuid())
+  userId      String
+  categoryId  String
+  title       String
+  description String?
+  budget      Float?
+  status      WantedStatus @default(active)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User    @relation(fields: [userId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@index([userId])
+  @@index([categoryId])
+}
+
+/**
+ * Simple user-to-user messaging about a listing.
+ * conversationId = the other participant's user id (one thread per pair).
+ */
+model Message {
+  id         String  @id @default(cuid())
+  senderId   String
+  receiverId String
+  listingId  String?
+  message    String
+  isRead     Boolean @default(false)
+  createdAt  DateTime @default(now())
+
+  sender   User    @relation("MessagesSent", fields: [senderId], references: [id])
+  receiver User    @relation("MessagesReceived", fields: [receiverId], references: [id])
+  listing  Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([listingId])
+  @@index([createdAt])
+}
+
+/**
+ * In-app notification (also emailed when configured).
+ */
+model Notification {
+  id          String          @id @default(cuid())
+  userId      String
+  type        NotificationType
+  message     String
+  referenceId String?          // e.g. listingId / requestId / messageId
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead, createdAt])
+}
+
+/**
+ * Reports filed by users against listings or other users.
+ */
+model Report {
+  id             String      @id @default(cuid())
+  reporterId     String
+  listingId      String?
+  reportedUserId String?
+  reason         String       // one of the ReportReason enum values
+  description    String?
+  status         ReportStatus @default(pending)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  reporter User?  @relation("ReportsMade", fields: [reporterId], references: [id])
+  listing  Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  @@index([reporterId])
+  @@index([listingId])
+  @@index([reportedUserId])
+}
+
+/**
+ * Audit trail of user / admin activity.
+ */
+model Activity {
+  id          String   @id @default(cuid())
+  userId      String?  // NULLable for system actions
+  action      String   // e.g. "login", "listing_created"
+  description String
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  user        User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+enum PaymentStatus {
+  pending  @map("pending")
+  approved @map("approved")
+  rejected @map("rejected")
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  userId        String
+  type          String        // "pro_subscription" or "item_pin"
+  listingId     String?
+  amount        Float
+  paymentMethod String        // "bKash", "Nagad", "Rocket"
+  trxId         String
+  senderPhone   String
+  status        PaymentStatus @default(pending)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
