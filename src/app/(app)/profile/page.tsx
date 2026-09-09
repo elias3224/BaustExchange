@@ -16,7 +16,7 @@ export default async function ProfilePage() {
       where: { id: sessionUser.id },
       select: {
         id: true, name: true, email: true, image: true, role: true, status: true,
-        department: true, studentId: true, phone: true, createdAt: true,
+        isVerifiedSeller: true, department: true, studentId: true, phone: true, createdAt: true,
       },
     }),
     prisma.listing.count({ where: { userId: sessionUser.id } }),
@@ -42,6 +42,11 @@ export default async function ProfilePage() {
           <div>
             <div className="text-lg font-semibold flex items-center gap-2">
               {user.name} <RoleBadge role={user.role} />
+              {user.isVerifiedSeller && (
+                <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                  ✓ BAUST Verified
+                </span>
+              )}
             </div>
             <div className="text-sm text-gray-500">{user.email}</div>
             <div className="text-xs text-gray-400">Joined {timeAgo(user.createdAt)}</div>
@@ -70,6 +75,8 @@ export default async function ProfilePage() {
           department: user.department ?? '',
           studentId: user.studentId ?? '',
           phone: user.phone ?? '',
+          role: user.role,
+          isVerifiedSeller: user.isVerifiedSeller,
         }}
       />
     </div>

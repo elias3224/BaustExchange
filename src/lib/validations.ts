@@ -49,6 +49,8 @@ export const updateProfileSchema = z.object({
   studentId: z.string().max(40).nullable().optional().or(z.literal('')),
   phone: z.string().max(30).nullable().optional().or(z.literal('')),
   image: z.string().url('Invalid url').nullable().optional().or(z.literal('')),
+  role: z.enum(['student', 'teacher']).optional(),
+  isVerifiedSeller: z.boolean().optional(),
 });
 
 export const createReportSchema = z.object({

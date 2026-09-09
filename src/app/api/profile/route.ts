@@ -23,6 +23,7 @@ export async function GET() {
       image: true,
       role: true,
       status: true,
+      isVerifiedSeller: true,
       department: true,
       studentId: true,
       phone: true,
@@ -57,8 +58,10 @@ export async function PATCH(req: NextRequest) {
         studentId: data.studentId || null,
         phone: data.phone || null,
         ...(data.image ? { image: data.image } : {}),
+        ...(data.role ? { role: data.role as any } : {}),
+        ...(data.isVerifiedSeller !== undefined ? { isVerifiedSeller: data.isVerifiedSeller } : {}),
       },
-      select: { id: true, department: true, studentId: true, phone: true, image: true },
+      select: { id: true, department: true, studentId: true, phone: true, image: true, role: true, isVerifiedSeller: true },
     });
 
     await logActivity(ActivityType.LISTING_UPDATED, 'Updated profile', user.id, ip);
