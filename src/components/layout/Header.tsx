@@ -3,26 +3,17 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
-import { Bell, Search, User, Menu } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { Search, User, Menu } from 'lucide-react';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { MobileNav } from './MobileNav';
 
 export function Header() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
-  const [unread, setUnread] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const user = (session?.user || ({} as any));
-
-  useEffect(() => {
-    if (user?.id) {
-      fetch('/api/notifications?limit=1', { cache: 'no-store' })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => setUnread(data?.unreadCount ?? 0))
-        .catch(() => setUnread(0));
-    }
-  }, [session, user?.id]);
 
   const navLinks = [
     { label: 'Dashboard', href: '/dashboard' },
@@ -83,21 +74,7 @@ export function Header() {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           </form>
 
-          {status === 'authenticated' && (
-            <Link
-              href="/notifications"
-              className={`relative p-2 rounded-md text-gray-600 hover:bg-gray-100 shrink-0 transition-colors ${
-                pathname === '/notifications' ? 'bg-brand-50 text-brand-700' : ''
-              }`}
-            >
-              <Bell className="w-5 h-5" />
-              {unread > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center text-xs font-bold leading-none px-1.5 py-0.5 bg-red-500 text-white rounded-full">
-                  {unread}
-                </span>
-              )}
-            </Link>
-          )}
+          {status === 'authenticated' && <NotificationBell />}
 
           {status === 'loading' ? (
             <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse shrink-0" />
