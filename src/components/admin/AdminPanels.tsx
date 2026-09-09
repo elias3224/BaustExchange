@@ -10,14 +10,17 @@ function useAdminAction() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  async function run(url: string, body: any, method = 'PATCH') {
+  async function run(url: string, body: any = {}, method = 'PATCH') {
     setBusy(true); setError('');
     try {
-      const res = await fetch(url, {
+      const options: RequestInit = {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      };
+      if (method !== 'DELETE' && method !== 'GET') {
+        options.body = JSON.stringify(body);
+      }
+      const res = await fetch(url, options);
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Action failed');
@@ -164,46 +167,54 @@ export function AdminReportRow({ report }: { report: any }) {
 
 export function AdminUserRow({ user, currentAdminId }: { user: any; currentAdminId: string }) {
   const { busy, error, run } = useAdminAction();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const isSelf = user.id === currentAdminId;
 
   return (
-    <div className="p-4 flex items-center gap-3">
+    <div className="p-4 flex items-center gap-3 border-b border-gray-100 last:border-0">
       {user.image ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={user.image} alt={user.name ?? ''} className="w-9 h-9 rounded-full object-cover" />
+        <img src={user.image} alt={user.name ?? ''} className="w-9 h-9 rounded-full object-cover shrink-0" />
       ) : (
-        <div className="w-9 h-9 rounded-full bg-gray-200" />
+        <div className="w-9 h-9 rounded-full bg-gray-200 shrink-0 flex items-center justify-center font-bold text-gray-500 text-xs">
+          {user.name?.[0] || 'U'}
+        </div>
       )}
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium flex items-center gap-2">
-          {user.name}
-          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-            user.role === 'admin' ? 'bg-purple-100 text-purple-800'
-            : user.role === 'teacher' ? 'bg-blue-100 text-blue-800'
+        <div className="text-sm font-medium flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-gray-900">{user.name}</span>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+            user.role === 'admin' ? 'bg-purple-100 text-purple-800 border border-purple-200'
+            : user.role === 'teacher' ? 'bg-blue-100 text-blue-800 border border-blue-200'
             : 'bg-gray-100 text-gray-700'
           }`}>
             {user.role}
           </span>
-          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-            user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+            user.status === 'active' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'
           }`}>
             {user.status}
           </span>
-          {isSelf && <span className="text-[10px] text-gray-400">(you)</span>}
+          {user.isVerifiedSeller && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
+              Verified
+            </span>
+          )}
+          {isSelf && <span className="text-[10px] text-gray-400 font-semibold">(you)</span>}
         </div>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-gray-500 mt-0.5">
           {user.email} • {user.department ?? 'No department'} • {user._count?.listings ?? 0} listing(s)
         </div>
         {error && <div className="text-xs text-red-600 mt-1">{error}</div>}
       </div>
 
       {!isSelf && (
-        <div className="flex flex-wrap gap-2 justify-end">
+        <div className="flex flex-wrap gap-1.5 justify-end shrink-0">
           {user.role !== 'admin' && (
             <button
               onClick={() => run(`/api/admin/users/${user.id}`, { role: 'admin' })}
               disabled={busy}
-              className="px-2 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-60"
+              className="px-2.5 py-1 text-xs font-semibold border border-gray-300 rounded-md hover:bg-gray-100 text-gray-700 disabled:opacity-60 transition-colors"
             >
               Make Admin
             </button>
@@ -212,7 +223,7 @@ export function AdminUserRow({ user, currentAdminId }: { user: any; currentAdmin
             <button
               onClick={() => run(`/api/admin/users/${user.id}`, { role: 'teacher' })}
               disabled={busy}
-              className="px-2 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-60"
+              className="px-2.5 py-1 text-xs font-semibold border border-gray-300 rounded-md hover:bg-gray-100 text-gray-700 disabled:opacity-60 transition-colors"
             >
               Make Teacher
             </button>
@@ -221,7 +232,7 @@ export function AdminUserRow({ user, currentAdminId }: { user: any; currentAdmin
             <button
               onClick={() => run(`/api/admin/users/${user.id}`, { status: 'blocked' })}
               disabled={busy}
-              className="px-2 py-1 text-xs font-medium text-white bg-red-500 rounded-md hover:bg-red-600 disabled:opacity-60"
+              className="px-2.5 py-1 text-xs font-semibold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-md disabled:opacity-60 transition-colors"
             >
               Block
             </button>
@@ -229,9 +240,36 @@ export function AdminUserRow({ user, currentAdminId }: { user: any; currentAdmin
             <button
               onClick={() => run(`/api/admin/users/${user.id}`, { status: 'active' })}
               disabled={busy}
-              className="px-2 py-1 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-60"
+              className="px-2.5 py-1 text-xs font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-60 transition-colors"
             >
               Unblock
+            </button>
+          )}
+
+          {confirmDelete ? (
+            <div className="inline-flex items-center gap-1">
+              <button
+                onClick={() => run(`/api/admin/users/${user.id}`, {}, 'DELETE')}
+                disabled={busy}
+                className="px-2.5 py-1 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-60 animate-pulse transition-colors"
+              >
+                Confirm Delete?
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                disabled={busy}
+                className="px-2 py-1 text-xs font-semibold border border-gray-300 rounded-md hover:bg-gray-100 text-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              disabled={busy}
+              className="px-2.5 py-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-md disabled:opacity-60 transition-colors"
+            >
+              Delete User
             </button>
           )}
         </div>

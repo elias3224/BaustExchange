@@ -1,5 +1,5 @@
 // src/app/api/admin/users/[id]/route.ts
-// Admin: change a user's role or status (promote / block / unblock).
+// Admin: change a user's role or status (promote / block / unblock), or delete a user.
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAdmin } from '@/lib/authz';
@@ -58,5 +58,88 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   } catch (err) {
     console.error('PATCH /api/admin/users/[id] error:', err);
     return NextResponse.json({ error: 'Something went wrong.' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  let admin;
+  try {
+    admin = await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+  }
+
+  try {
+    const { id } = await params;
+
+    // Safety: an admin cannot delete their own account.
+    if (id === admin.id) {
+      return NextResponse.json({ error: 'You cannot delete your own admin account.' }, { status: 400 });
+    }
+
+    const target = await prisma.user.findUnique({ where: { id } });
+    if (!target) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete requests where user is sender or receiver
+      await tx.exchangeRequest.deleteMany({
+        where: { OR: [{ senderId: id }, { receiverId: id }] },
+      });
+
+      // 2. Delete messages where user is sender or receiver
+      await tx.message.deleteMany({
+        where: { OR: [{ senderId: id }, { receiverId: id }] },
+      });
+
+      // 3. Delete notifications
+      await tx.notification.deleteMany({
+        where: { userId: id },
+      });
+
+      // 4. Delete reports made by or against user
+      await tx.report.deleteMany({
+        where: { OR: [{ reporterId: id }, { reportedUserId: id }] },
+      });
+
+      // 5. Delete wanted items
+      await tx.wantedItem.deleteMany({
+        where: { userId: id },
+      });
+
+      // 6. Delete payments
+      await tx.payment.deleteMany({
+        where: { userId: id },
+      });
+
+      // 7. Find user's listings to delete child records (requests, messages, reports, images)
+      const userListings = await tx.listing.findMany({
+        where: { userId: id },
+        select: { id: true },
+      });
+      const listingIds = userListings.map((l) => l.id);
+
+      if (listingIds.length > 0) {
+        await tx.exchangeRequest.deleteMany({ where: { listingId: { in: listingIds } } });
+        await tx.message.deleteMany({ where: { listingId: { in: listingIds } } });
+        await tx.report.deleteMany({ where: { listingId: { in: listingIds } } });
+        await tx.listingImage.deleteMany({ where: { listingId: { in: listingIds } } });
+        await tx.listing.deleteMany({ where: { id: { in: listingIds } } });
+      }
+
+      // 8. Disassociate activities
+      await tx.activity.updateMany({
+        where: { userId: id },
+        data: { userId: null },
+      });
+
+      // 9. Delete user record
+      await tx.user.delete({ where: { id } });
+    });
+
+    await logActivity(ActivityType.ADMIN_ROLE, `Deleted user account ${target.email} (${target.name})`, admin.id);
+    return NextResponse.json({ success: true, message: `User ${target.email} successfully deleted.` });
+  } catch (err) {
+    console.error('DELETE /api/admin/users/[id] error:', err);
+    return NextResponse.json({ error: 'Failed to delete user.' }, { status: 500 });
   }
 }
