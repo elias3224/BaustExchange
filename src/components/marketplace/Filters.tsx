@@ -127,17 +127,17 @@ export function FiltersForm({ categories, params }: { categories: CategoryOpt[];
       </div>
 
       {/* Bottom Controls Row: Price Range, Department, Apply/Reset */}
-      <div className="flex flex-wrap items-end gap-4 pt-1 border-t border-gray-100">
-        <div>
+      <div className="flex flex-wrap items-end gap-4 pt-2 border-t border-gray-100">
+        <div className="w-full sm:w-auto">
           <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Price Range (৳)</label>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full">
             <input
               type="number"
               name="minPrice"
               defaultValue={minPrice}
               placeholder="Min"
               min="0"
-              className="w-28 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className="flex-1 sm:w-28 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500 min-h-[44px]"
             />
             <span className="text-gray-400 font-medium">—</span>
             <input
@@ -146,7 +146,7 @@ export function FiltersForm({ categories, params }: { categories: CategoryOpt[];
               defaultValue={maxPrice}
               placeholder="Max"
               min="0"
-              className="w-28 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className="flex-1 sm:w-28 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500 min-h-[44px]"
             />
           </div>
         </div>
@@ -158,20 +158,20 @@ export function FiltersForm({ categories, params }: { categories: CategoryOpt[];
             name="department"
             defaultValue={department}
             placeholder="e.g. CSE"
-            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500 min-h-[44px]"
           />
         </div>
 
-        <div className="flex items-center gap-2.5 pt-2 sm:pt-0">
+        <div className="flex items-center gap-2.5 pt-1 sm:pt-0 w-full sm:w-auto">
           <button
             type="submit"
-            className="px-5 py-1.5 text-sm font-medium text-white bg-brand-500 rounded-md hover:bg-brand-600 transition-colors shadow-sm"
+            className="flex-1 sm:flex-initial px-5 py-2.5 text-sm font-semibold text-white bg-brand-500 rounded-lg hover:bg-brand-600 active:bg-brand-700 transition-colors shadow-xs text-center min-h-[44px]"
           >
             Apply Filters
           </button>
           <Link
             href="/marketplace"
-            className="px-4 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
+            className="flex-1 sm:flex-initial px-4 py-2.5 text-sm font-semibold text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors text-center min-h-[44px]"
           >
             Reset
           </Link>

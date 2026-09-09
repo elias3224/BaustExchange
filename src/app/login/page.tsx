@@ -28,7 +28,7 @@ function LoginContent() {
   };
 
   return (
-    <div className="bg-gray-800 border border-gray-700 shadow-2xl rounded-2xl p-8 sm:p-10 w-full max-w-md text-center text-white relative z-10">
+    <div className="bg-gray-800 border border-gray-700 shadow-2xl rounded-2xl p-5 sm:p-10 w-full max-w-md text-center text-white relative z-10">
       {/* Brand Header */}
       <div className="flex flex-col items-center mb-6">
         <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-gray-700 shadow-md mb-3">

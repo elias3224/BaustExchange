@@ -97,25 +97,26 @@ export function ImageUploader({
 
       {/* Uploaded Preview Thumbnails Grid */}
       {previews.length > 0 && (
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 pt-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 sm:gap-3 pt-1">
           {previews.map((url, i) => (
             <div
               key={i}
-              className="relative aspect-square border border-gray-200 rounded-xl overflow-hidden group shadow-sm bg-gray-100"
+              className="relative aspect-square border border-gray-200 rounded-xl overflow-hidden group shadow-xs bg-gray-100 max-w-full"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={url}
                 alt={`Item image ${i + 1}`}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform max-w-full"
               />
               <button
                 type="button"
                 onClick={() => onRemove(i)}
-                className="absolute top-1.5 right-1.5 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-md hover:bg-red-700 transition-colors"
+                className="absolute top-1.5 right-1.5 bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs shadow-md hover:bg-red-700 active:scale-95 transition-all"
                 title="Remove image"
+                aria-label="Remove image"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
               <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">
                 #{i + 1}
