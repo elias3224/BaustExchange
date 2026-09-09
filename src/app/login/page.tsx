@@ -4,13 +4,38 @@ import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
-import { ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Suspense, useState, useEffect } from 'react';
+import { ShieldCheck, ArrowLeft, GraduationCap, Award, CheckCircle2 } from 'lucide-react';
 
 function LoginContent() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   const error = searchParams.get('error');
+
+  const [selectedRole, setSelectedRole] = useState<'student' | 'teacher'>('student');
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('baust_pre_auth_role');
+      if (saved === 'teacher' || saved === 'student') {
+        setSelectedRole(saved);
+      }
+    } catch {}
+  }, []);
+
+  function handleRoleSelect(role: 'student' | 'teacher') {
+    setSelectedRole(role);
+    try {
+      localStorage.setItem('baust_pre_auth_role', role);
+    } catch {}
+  }
+
+  function handleGoogleLogin() {
+    try {
+      localStorage.setItem('baust_pre_auth_role', selectedRole);
+    } catch {}
+    signIn('google', { callbackUrl });
+  }
 
   const getErrorMessage = (err: string) => {
     switch (err) {
@@ -28,10 +53,10 @@ function LoginContent() {
   };
 
   return (
-    <div className="bg-gray-800 border border-gray-700 shadow-2xl rounded-2xl p-5 sm:p-10 w-full max-w-md text-center text-white relative z-10">
+    <div className="bg-gray-800/95 border border-gray-700 shadow-2xl rounded-2xl p-5 sm:p-8 w-full max-w-md text-center text-white relative z-10 space-y-5 my-auto">
       {/* Brand Header */}
-      <div className="flex flex-col items-center mb-6">
-        <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-gray-700 shadow-md mb-3">
+      <div className="flex flex-col items-center">
+        <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-gray-700 shadow-md mb-2">
           <Image
             src="/images/campus.jpeg"
             alt="BAUST Campus"
@@ -42,21 +67,63 @@ function LoginContent() {
         <h1 className="text-2xl font-bold text-emerald-400 tracking-tight">
           BAUST <span className="text-white">Exchange</span>
         </h1>
-        <p className="mt-1.5 text-xs text-gray-300 max-w-xs">
-          Sign in with your student Google account to continue to the campus marketplace.
+        <p className="mt-1 text-xs text-gray-300 max-w-xs leading-relaxed">
+          Select your campus role and sign in with Google to access the BAUST marketplace.
         </p>
       </div>
 
       {error && (
-        <div className="mb-6 p-3 bg-red-900/50 border border-red-700 text-red-200 text-xs rounded-xl text-left">
+        <div className="p-3 bg-red-900/50 border border-red-700 text-red-200 text-xs rounded-xl text-left">
           {getErrorMessage(error)}
         </div>
       )}
 
+      {/* Pre-Authentication Role Selection */}
+      <div className="text-left space-y-2 pt-1">
+        <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+          Select Your Campus Role Before Sign In
+        </label>
+        <div className="grid grid-cols-2 gap-2.5">
+          <button
+            type="button"
+            onClick={() => handleRoleSelect('student')}
+            className={`flex flex-col items-center text-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
+              selectedRole === 'student'
+                ? 'border-emerald-400 bg-emerald-500/20 text-white shadow-sm'
+                : 'border-gray-700 bg-gray-900/40 text-gray-400 hover:bg-gray-700/50'
+            }`}
+          >
+            <div className="flex items-center justify-between w-full mb-1">
+              <GraduationCap className={`w-5 h-5 ${selectedRole === 'student' ? 'text-emerald-400' : 'text-gray-400'}`} />
+              {selectedRole === 'student' && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+            </div>
+            <span className="font-bold text-sm text-white">Student</span>
+            <span className="text-[10px] text-gray-300 mt-0.5">BAUST Undergrad / Grad</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleRoleSelect('teacher')}
+            className={`flex flex-col items-center text-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
+              selectedRole === 'teacher'
+                ? 'border-emerald-400 bg-emerald-500/20 text-white shadow-sm'
+                : 'border-gray-700 bg-gray-900/40 text-gray-400 hover:bg-gray-700/50'
+            }`}
+          >
+            <div className="flex items-center justify-between w-full mb-1">
+              <Award className={`w-5 h-5 ${selectedRole === 'teacher' ? 'text-emerald-400' : 'text-gray-400'}`} />
+              {selectedRole === 'teacher' && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+            </div>
+            <span className="font-bold text-sm text-white">Teacher / Faculty</span>
+            <span className="text-[10px] text-gray-300 mt-0.5">Faculty Member / Staff</span>
+          </button>
+        </div>
+      </div>
+
       {/* Google Sign In Button */}
       <button
-        onClick={() => signIn('google', { callbackUrl })}
-        className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white hover:bg-gray-100 text-gray-800 font-semibold rounded-full border border-gray-200 shadow-lg transition-all duration-200 group"
+        onClick={handleGoogleLogin}
+        className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white hover:bg-gray-100 text-gray-800 font-bold rounded-xl border border-gray-200 shadow-lg transition-all duration-200 group active:scale-[0.99] min-h-[44px]"
       >
         <span className="flex items-center justify-center shrink-0">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5 group-hover:scale-110 transition-transform">
@@ -66,15 +133,15 @@ function LoginContent() {
             <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
           </svg>
         </span>
-        <span>Continue with Google</span>
+        <span>Continue with Google as {selectedRole === 'teacher' ? 'Teacher' : 'Student'}</span>
       </button>
 
-      <div className="mt-6 flex items-center justify-center gap-1.5 text-[11px] text-gray-400">
+      <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-400 pt-1">
         <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
         <span>Secure authentication with Google OAuth</span>
       </div>
 
-      <p className="mt-6 pt-5 border-t border-gray-700 text-center text-xs text-gray-400">
+      <p className="pt-4 border-t border-gray-700 text-center text-xs text-gray-400">
         <Link href="/" className="inline-flex items-center gap-1.5 font-medium text-emerald-400 hover:text-emerald-300 hover:underline">
           <ArrowLeft className="w-3.5 h-3.5" /> Back to home
         </Link>
@@ -85,7 +152,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-gray-900 flex items-center justify-center p-4 font-sans select-none">
+    <div className="relative w-full min-h-screen overflow-y-auto bg-gray-900 flex items-center justify-center p-4 font-sans select-none">
       {/* Full Page Campus Background Image with dark opacity */}
       <Image
         src="/images/campus.jpeg"
