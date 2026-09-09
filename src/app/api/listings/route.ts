@@ -142,6 +142,33 @@ export async function POST(req: NextRequest) {
 
     await logActivity(ActivityType.LISTING_CREATED, `Created listing "${data.title}"`, user.id, ip);
 
+    // 1. Notify the poster that their item was created successfully
+    await createNotification(
+      user.id,
+      NotificationType.LISTING_APPROVED,
+      `Your item "${data.title}" was posted successfully!`,
+      listing.id
+    );
+
+    // 2. Broadcast notification to all other active users
+    if (autoApprove) {
+      const otherUsers = await prisma.user.findMany({
+        where: { id: { not: user.id }, status: 'active' },
+        select: { id: true },
+      });
+
+      if (otherUsers.length > 0) {
+        await prisma.notification.createMany({
+          data: otherUsers.map((u) => ({
+            userId: u.id,
+            type: NotificationType.LISTING_APPROVED,
+            message: `${user.name || 'A student'} listed a new item: "${data.title}" in ${category.name}.`,
+            referenceId: listing.id,
+          })),
+        });
+      }
+    }
+
     // If admin approval is required, notify admins.
     if (!autoApprove) {
       const admins = await prisma.user.findMany({ where: { role: 'admin' } });

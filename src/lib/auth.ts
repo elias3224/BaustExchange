@@ -53,6 +53,9 @@ export const authOptions = {
           return false;
         }
 
+        let targetUserId = existing?.id;
+        let targetUserName = user.name || existing?.name || 'User';
+
         if (existing) {
           await prisma.user.update({
             where: { id: existing.id },
@@ -64,7 +67,7 @@ export const authOptions = {
             },
           });
         } else {
-          await prisma.user.create({
+          const newUser = await prisma.user.create({
             data: {
               googleId: googleId || email,
               email,
@@ -74,6 +77,30 @@ export const authOptions = {
               status: 'active',
             },
           });
+          targetUserId = newUser.id;
+          targetUserName = newUser.name;
+        }
+
+        if (targetUserId) {
+          const recentLoginNotif = await prisma.notification.findFirst({
+            where: {
+              userId: targetUserId,
+              type: 'ADMIN',
+              message: { contains: 'logged in' },
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+
+          const isRecent = recentLoginNotif && (Date.now() - new Date(recentLoginNotif.createdAt).getTime()) < 15 * 60 * 1000;
+          if (!isRecent) {
+            await prisma.notification.create({
+              data: {
+                userId: targetUserId,
+                type: 'ADMIN',
+                message: `Welcome back, ${targetUserName}! You logged in to BAUST Exchange.`,
+              },
+            });
+          }
         }
       } catch (e) {
         console.error('signIn DB sync error (continuing session):', e);
