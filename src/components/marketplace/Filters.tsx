@@ -74,7 +74,7 @@ export function FiltersForm({ categories, params }: { categories: CategoryOpt[];
             <Link
               key={c.id}
               href={buildUrl({ category: c.slug })}
-              className={`px-3 py-1 text-xs sm:text-sm font-medium rounded-md border transition-colors ${
+              className={`px-3 py-1.5 sm:py-1 text-xs sm:text-sm font-medium rounded-md border transition-colors ${
                 category === c.slug
                   ? 'bg-brand-500 text-white border-brand-500'
                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
@@ -94,7 +94,7 @@ export function FiltersForm({ categories, params }: { categories: CategoryOpt[];
             <Link
               key={c}
               href={buildUrl({ condition: c })}
-              className={`px-3 py-1 text-xs sm:text-sm font-medium rounded-md border transition-colors ${
+              className={`px-3 py-1.5 sm:py-1 text-xs sm:text-sm font-medium rounded-md border transition-colors ${
                 condition === c
                   ? 'bg-brand-500 text-white border-brand-500'
                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
@@ -114,7 +114,7 @@ export function FiltersForm({ categories, params }: { categories: CategoryOpt[];
             <Link
               key={t}
               href={buildUrl({ transactionType: t })}
-              className={`px-3 py-1 text-xs sm:text-sm font-medium rounded-md border transition-colors ${
+              className={`px-3 py-1.5 sm:py-1 text-xs sm:text-sm font-medium rounded-md border transition-colors ${
                 transactionType === t
                   ? 'bg-brand-500 text-white border-brand-500'
                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'

@@ -53,17 +53,17 @@ export default async function ProfilePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mt-6 text-center">
-          <div className="bg-gray-50 rounded-md p-3">
-            <div className="text-xl font-bold text-brand-700">{listingsCount}</div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-6 text-center">
+          <div className="bg-gray-50 rounded-md p-2 sm:p-3">
+            <div className="text-lg sm:text-xl font-bold text-brand-700">{listingsCount}</div>
             <div className="text-xs text-gray-500">Listings</div>
           </div>
-          <div className="bg-gray-50 rounded-md p-3">
-            <div className="text-xl font-bold text-brand-700">{requestsCount}</div>
+          <div className="bg-gray-50 rounded-md p-2 sm:p-3">
+            <div className="text-lg sm:text-xl font-bold text-brand-700">{requestsCount}</div>
             <div className="text-xs text-gray-500">Requests</div>
           </div>
-          <div className="bg-gray-50 rounded-md p-3">
-            <div className="text-xl font-bold text-brand-700">{completedCount}</div>
+          <div className="bg-gray-50 rounded-md p-2 sm:p-3">
+            <div className="text-lg sm:text-xl font-bold text-brand-700">{completedCount}</div>
             <div className="text-xs text-gray-500">Completed</div>
           </div>
         </div>

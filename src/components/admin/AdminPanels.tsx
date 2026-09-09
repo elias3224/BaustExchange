@@ -171,7 +171,7 @@ export function AdminUserRow({ user, currentAdminId }: { user: any; currentAdmin
   const isSelf = user.id === currentAdminId;
 
   return (
-    <div className="p-4 flex items-center gap-3 border-b border-gray-100 last:border-0">
+    <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 border-b border-gray-100 last:border-0">
       {user.image ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={user.image} alt={user.name ?? ''} className="w-9 h-9 rounded-full object-cover shrink-0" />
@@ -209,7 +209,7 @@ export function AdminUserRow({ user, currentAdminId }: { user: any; currentAdmin
       </div>
 
       {!isSelf && (
-        <div className="flex flex-wrap gap-1.5 justify-end shrink-0">
+        <div className="flex flex-wrap gap-1.5 sm:justify-end w-full sm:w-auto">
           {user.role !== 'admin' && (
             <button
               onClick={() => run(`/api/admin/users/${user.id}`, { role: 'admin' })}

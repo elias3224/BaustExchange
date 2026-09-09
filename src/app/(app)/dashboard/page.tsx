@@ -118,15 +118,27 @@ export default async function DashboardPage() {
           <div className="space-y-2">
             {typedRequests.map((r) => {
               const other = r.senderId === user.id ? r.receiver : r.sender;
-              return (
-                <Link key={r.id} href={`/item/${r.listing?.id ?? ''}`} className="block p-3 sm:p-4 border border-gray-200 rounded-xl bg-white hover:border-gray-300 active:bg-gray-50 transition-all shadow-2xs">
+              const row = (
+                <>
                   <div className="text-sm font-semibold text-gray-900 flex flex-wrap items-center gap-1">
                     <span>{r.senderId === user.id ? 'You' : other?.name ?? 'Someone'}</span>
                     <span className="text-brand-600">{r.senderId === user.id ? ' →' : ' → you'}</span>
                     <span className="truncate max-w-[200px] sm:max-w-md">{r.listing?.title ?? ''}</span>
                   </div>
                   <div className="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">{r.message}</div>
+                </>
+              );
+              const rowClass =
+                'block p-3 sm:p-4 border border-gray-200 rounded-xl bg-white hover:border-gray-300 active:bg-gray-50 transition-all shadow-2xs';
+              // If the listing was deleted, render a plain row (no broken /item/ link).
+              return r.listing?.id ? (
+                <Link key={r.id} href={`/item/${r.listing.id}`} className={rowClass}>
+                  {row}
                 </Link>
+              ) : (
+                <div key={r.id} className={rowClass}>
+                  {row}
+                </div>
               );
             })}
           </div>

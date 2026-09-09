@@ -42,16 +42,22 @@ export function RequestCard({ request, direction }: { request: any; direction: '
 
   return (
     <div className="border border-gray-200 rounded-md bg-white p-4">
-      <div className="flex gap-4">
-        {/* Item thumbnail */}
-        <Link href={`/item/${request.listing?.id ?? ''}`} className="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
-          {request.listing?.images?.[0]?.url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={request.listing.images[0].url} alt={request.listing.title} className="w-full h-full object-cover" />
-          ) : (
+      <div className="flex gap-3 sm:gap-4">
+        {/* Item thumbnail (non-clickable when the listing no longer exists) */}
+        {request.listing?.id ? (
+          <Link href={`/item/${request.listing.id}`} className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
+            {request.listing?.images?.[0]?.url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={request.listing.images[0].url} alt={request.listing.title} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No image</div>
+            )}
+          </Link>
+        ) : (
+          <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
             <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No image</div>
-          )}
-        </Link>
+          </div>
+        )}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
@@ -59,16 +65,20 @@ export function RequestCard({ request, direction }: { request: any; direction: '
               <div className="text-sm">
                 <span className="font-medium">{direction === 'incoming' ? (other?.name ?? 'Someone') : 'You'}</span>
                 {' '}{direction === 'incoming' ? 'wants your' : 'requested'}{' '}
-                <Link href={`/item/${request.listing?.id ?? ''}`} className="text-brand-600 hover:underline">
-                  {request.listing?.title ?? 'a listing'}
-                </Link>
+                {request.listing?.id ? (
+                  <Link href={`/item/${request.listing.id}`} className="text-brand-600 hover:underline">
+                    {request.listing.title}
+                  </Link>
+                ) : (
+                  <span className="text-gray-500">a listing</span>
+                )}
                 {request.listing && (
                   <span className="text-gray-500"> ({request.listing.transactionType === 'give_away' ? 'FREE' : formatPrice(request.listing.price ?? 0)})</span>
                 )}
               </div>
               <div className="text-xs text-gray-400 mt-0.5">{timeAgo(request.createdAt)}</div>
             </div>
-            <span className={`text-xs px-2 py-0.5 rounded whitespace-nowrap ${STATUS_COLOR[request.status] || 'bg-gray-100'}`}>
+            <span className={`text-xs px-2 py-0.5 rounded whitespace-nowrap shrink-0 ${STATUS_COLOR[request.status] || 'bg-gray-100'}`}>
               {request.status}
             </span>
           </div>

@@ -24,11 +24,11 @@ export default async function MyListingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">My Listings</h1>
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">My Listings</h1>
         <Link
           href="/post-item"
-          className="inline-flex items-center gap-1 px-4 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 text-sm"
+          className="inline-flex items-center justify-center gap-1 px-4 py-2.5 sm:py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 active:bg-brand-700 text-sm min-h-[44px] sm:min-h-0"
         >
           <Plus className="w-4 h-4" /> Post New Item
         </Link>

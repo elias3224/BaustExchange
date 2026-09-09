@@ -64,7 +64,7 @@ export default async function AdminPage() {
       <h1 className="text-2xl font-bold text-gray-800">Admin Panel</h1>
 
       {/* Stats */}
-      <section className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <section className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
         {[
           { label: 'Pending Payments', value: pendingPayments, icon: <CreditCard className="w-5 h-5" /> },
           { label: 'Pending Listings', value: pendingCount, icon: <Package className="w-5 h-5" /> },
@@ -72,11 +72,11 @@ export default async function AdminPage() {
           { label: 'Users', value: userCount, icon: <Users className="w-5 h-5" /> },
           { label: 'Pending Reports', value: pendingReports, icon: <Flag className="w-5 h-5" /> },
         ].map((s) => (
-          <div key={s.label} className="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-md">
-            <div className="text-brand-500">{s.icon}</div>
-            <div>
+          <div key={s.label} className="flex items-center gap-3 p-3 sm:p-4 bg-white border border-gray-200 rounded-md min-w-0">
+            <div className="text-brand-500 shrink-0">{s.icon}</div>
+            <div className="min-w-0">
               <div className="text-xl font-bold">{s.value}</div>
-              <div className="text-xs text-gray-500">{s.label}</div>
+              <div className="text-xs text-gray-500 truncate">{s.label}</div>
             </div>
           </div>
         ))}

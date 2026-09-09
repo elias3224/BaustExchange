@@ -35,12 +35,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <SessionProvider session={session}>
       <SessionProviderInner user={session.user}>
-        <div className="h-screen w-screen flex flex-col overflow-hidden bg-gray-50">
+        <div className="h-screen supports-[height:100dvh]:h-dvh w-full flex flex-col overflow-hidden bg-gray-50">
           <Header />
           <div className="flex-1 flex min-h-0 overflow-hidden w-full relative">
             <Sidebar />
             <div className="flex-1 h-full overflow-y-auto min-w-0">
-              <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-8 max-w-7xl mx-auto">{children}</main>
+              <main className="min-w-0 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 max-w-7xl mx-auto pb-safe">{children}</main>
             </div>
             <RightSidebar />
           </div>

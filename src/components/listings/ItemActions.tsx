@@ -207,11 +207,11 @@ export function ItemActions({
       {error && <Alert type="error">{error}</Alert>}
       {success && <Alert type="success">{success}</Alert>}
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {!closed && (
           <button
             onClick={() => { setShowRequest(!showRequest); setShowReport(false); }}
-            className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-md hover:bg-brand-600 shadow-sm"
+            className="flex-1 min-w-[200px] px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-md hover:bg-brand-600 active:bg-brand-700 shadow-sm"
           >
             Request / Buy this Item
           </button>

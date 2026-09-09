@@ -46,10 +46,10 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Breadcrumb */}
-      <div className="text-sm text-gray-500">
-        <Link href="/marketplace" className="hover:underline">Marketplace</Link>
-        <span className="mx-1">/</span>
-        <span className="text-gray-700">{listing.title}</span>
+      <div className="text-sm text-gray-500 flex items-center min-w-0">
+        <Link href="/marketplace" className="hover:underline shrink-0">Marketplace</Link>
+        <span className="mx-1 shrink-0">/</span>
+        <span className="text-gray-700 truncate min-w-0" title={listing.title}>{listing.title}</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -76,13 +76,13 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
         {/* Details */}
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-2">
-            <h1 className="text-2xl font-bold text-gray-800">{listing.title}</h1>
-            <span className={`text-xs px-2 py-0.5 rounded whitespace-nowrap mt-1 ${listing.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 min-w-0 break-words">{listing.title}</h1>
+            <span className={`text-xs px-2 py-0.5 rounded whitespace-nowrap mt-1 shrink-0 ${listing.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
               {STATUS_LABELS[listing.status] || listing.status}
             </span>
           </div>
 
-          <div className="text-2xl font-bold text-brand-700">
+          <div className="text-xl sm:text-2xl font-bold text-brand-700">
             {isFree ? 'FREE' : formatPrice(unitPrice)}
             {!isFree && qty > 1 && (
               <span className="text-sm font-normal text-gray-500 ml-1">/ item</span>

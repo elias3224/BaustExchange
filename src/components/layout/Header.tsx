@@ -69,7 +69,7 @@ export function Header() {
             <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
 
-          <Link href="/" className="text-base sm:text-lg font-bold text-brand-700 shrink-0 whitespace-nowrap">
+          <Link href="/dashboard" className="text-base sm:text-lg font-bold text-brand-700 shrink-0 whitespace-nowrap">
             BAUST <span className="text-brand-600">Exchange</span>
           </Link>
         </div>

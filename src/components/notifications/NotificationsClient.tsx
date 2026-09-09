@@ -73,8 +73,8 @@ export function NotificationsClient({ notifications: initialNotifications }: { n
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-gray-200 shadow-xs">
-        <div>
+      <div className="flex flex-wrap gap-3 justify-between items-center bg-white p-4 rounded-lg border border-gray-200 shadow-xs">
+        <div className="min-w-0">
           <h1 className="text-xl font-bold text-gray-800">Notifications</h1>
           <p className="text-xs text-gray-500 mt-0.5">Stay updated on exchange requests, messages, and listings</p>
         </div>

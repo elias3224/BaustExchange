@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Alert } from '@/components/ui/Alert';
 import { timeAgo } from '@/lib/utils';
-import { Send } from 'lucide-react';
+import { Send, ChevronLeft } from 'lucide-react';
 
 type Msg = {
   id: string;
@@ -35,6 +35,10 @@ export function MessagesClient({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
+
+  // Mobile single-pane switcher: 'list' = conversation list, 'chat' = active thread.
+  // Deep links (?with=<id>) open the chat pane directly on phones; md+ shows both panes.
+  const [mobilePane, setMobilePane] = useState<'list' | 'chat'>(initialPartner ? 'chat' : 'list');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -231,13 +235,16 @@ export function MessagesClient({
           description="Message a seller from any item page or wanted list to start a conversation."
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 min-h-[30rem]">
-          {/* Conversation list */}
-          <div className="md:col-span-1 border border-gray-200 rounded-lg bg-white divide-y divide-gray-100 max-h-[34rem] overflow-y-auto shadow-xs">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:min-h-[30rem]">
+          {/* Conversation list (hidden on phones while a thread is open) */}
+          <div className={`md:col-span-1 border border-gray-200 rounded-lg bg-white divide-y divide-gray-100 max-h-[34rem] overflow-y-auto shadow-xs ${mobilePane === 'chat' ? 'hidden md:block' : 'block'}`}>
             {conversations.map((c) => (
               <button
                 key={c.partner.id}
-                onClick={() => setPartner(c.partner.id)}
+                onClick={() => {
+                  setPartner(c.partner.id);
+                  setMobilePane('chat');
+                }}
                 className={`w-full text-left px-3.5 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors ${
                   activePartner === c.partner.id ? 'bg-brand-50/80 border-l-4 border-brand-500' : ''
                 }`}
@@ -265,12 +272,23 @@ export function MessagesClient({
             ))}
           </div>
 
-          {/* Chat Thread */}
-          <div className="md:col-span-2 border border-gray-200 rounded-lg bg-white flex flex-col max-h-[34rem] justify-between shadow-xs">
+          {/* Chat Thread (near full-height sheet on phones, side pane on md+) */}
+          <div
+            className={`md:col-span-2 border border-gray-200 rounded-lg bg-white flex-col shadow-xs overflow-hidden h-[calc(100dvh-14rem)] min-h-[24rem] md:h-auto md:min-h-[30rem] md:max-h-[34rem] ${
+              mobilePane === 'list' ? 'hidden md:flex' : 'flex'
+            }`}
+          >
             {activePartner ? (
               <>
-                <div className="px-4 py-3 border-b border-gray-200 text-sm font-semibold text-gray-800 flex items-center justify-between bg-gray-50/70">
-                  <div className="flex items-center gap-2.5">
+                <div className="px-3 sm:px-4 py-3 border-b border-gray-200 text-sm font-semibold text-gray-800 flex items-center justify-between gap-2 bg-gray-50/70 shrink-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                    <button
+                      onClick={() => setMobilePane('list')}
+                      className="md:hidden -ml-1 p-1.5 rounded-md text-gray-500 hover:bg-gray-200 active:bg-gray-300 transition-colors shrink-0"
+                      aria-label="Back to conversations"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
                     {partnerInfo?.image ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={partnerInfo.image} alt="" className="w-7 h-7 rounded-full object-cover border border-gray-200" />
@@ -279,7 +297,7 @@ export function MessagesClient({
                         {partnerInfo?.name?.charAt(0) || 'U'}
                       </div>
                     )}
-                    <span className="font-semibold text-gray-900">{partnerInfo?.name ?? 'User'}</span>
+                    <span className="font-semibold text-gray-900 truncate">{partnerInfo?.name ?? 'User'}</span>
                   </div>
 
                   {isPartnerTyping && (
@@ -290,7 +308,7 @@ export function MessagesClient({
                 </div>
 
                 {/* Messages Container */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[18rem]">
+                <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 space-y-3 md:min-h-[18rem] overscroll-contain">
                   {thread.length === 0 ? (
                     <p className="text-center text-xs text-gray-400 my-12">
                       No message history with this user. Type a message below to start the conversation!
@@ -328,26 +346,26 @@ export function MessagesClient({
                 </div>
 
                 {/* Input Form */}
-                <form onSubmit={send} className="p-3 border-t border-gray-200 flex gap-2 bg-gray-50/70">
+                <form onSubmit={send} className="p-3 border-t border-gray-200 flex gap-2 bg-gray-50/70 shrink-0">
                   <input
                     type="text"
                     value={draft}
                     onChange={handleInputChange}
                     placeholder={`Message ${partnerInfo?.name || 'User'}...`}
-                    className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white"
+                    className="flex-1 min-w-0 px-4 py-2 min-h-[44px] text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white"
                   />
                   <button
                     type="submit"
                     disabled={sending || !draft.trim()}
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-brand-600 rounded-full hover:bg-brand-700 disabled:opacity-50 transition-colors shadow-sm shrink-0"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-semibold text-white bg-brand-600 rounded-full hover:bg-brand-700 active:bg-brand-800 disabled:opacity-50 transition-colors shadow-sm shrink-0"
                   >
                     <Send className="w-4 h-4" /> Send
                   </button>
                 </form>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-sm text-gray-400 p-8">
-                Select a conversation from the left to start messaging
+              <div className="flex-1 flex items-center justify-center text-sm text-gray-400 p-8 text-center">
+                Select a conversation to start messaging
               </div>
             )}
           </div>
