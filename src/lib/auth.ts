@@ -112,8 +112,17 @@ export const authOptions = {
     },
 
     async redirect({ url, baseUrl }: any) {
+      // Allow relative URLs (e.g. '/dashboard') resolved against the app origin.
       if (url.startsWith('/')) return `${baseUrl}${url}`;
-      if (new URL(url).origin === baseUrl) return url;
+      // Only allow absolute URLs on the same origin (prevents open redirects).
+      // NOTE: must never throw - @auth/core passes raw callbackUrl values here
+      // (query param / cookie) and an unparseable value previously crashed the
+      // whole sign-in action with "TypeError: Invalid URL" -> error=Configuration.
+      try {
+        if (new URL(url).origin === baseUrl) return url;
+      } catch {
+        return baseUrl;
+      }
       return baseUrl;
     },
 
@@ -214,6 +223,6 @@ const {
   signIn,
   signOut,
   handlers: { GET, POST },
-} = NextAuth(authOptions);
+} = NextAuth(() => authOptions);
 
 export { auth, signIn, signOut, GET, POST };
