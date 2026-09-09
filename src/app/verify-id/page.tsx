@@ -43,6 +43,7 @@ export default function VerifyIdPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Automatically load the role selected before login
   useEffect(() => {
     try {
       const savedRole = localStorage.getItem('baust_pre_auth_role');
@@ -53,19 +54,6 @@ export default function VerifyIdPage() {
       }
     } catch {}
   }, [user]);
-
-  function handleRoleSelect(role: 'student' | 'teacher') {
-    setSelectedRole(role);
-    try {
-      localStorage.setItem('baust_pre_auth_role', role);
-    } catch {}
-    // Reset file verification if role changes
-    if (idCardFile) {
-      setIdCardFile(null);
-      setIdCardPreview(null);
-      setVerificationResult(null);
-    }
-  }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -194,69 +182,39 @@ export default function VerifyIdPage() {
             BAUST <span className="text-white">Exchange</span>
           </h1>
           <p className="text-xs text-gray-300 max-w-sm mx-auto leading-relaxed">
-            One-Time Mandatory ID Card Verification for Campus Safety & Trust.
+            Upload your official {selectedRole === 'teacher' ? 'BAUST Teacher / Faculty ID Card' : 'BAUST Student ID Card'} to complete one-time verification.
           </p>
         </div>
 
-        {/* User Info Pill */}
-        <div className="flex items-center justify-between p-3 bg-gray-700/60 rounded-xl border border-gray-600/60 text-xs">
+        {/* User Info Pill with Selected Role Badge */}
+        <div className="flex items-center justify-between p-3.5 bg-gray-700/60 rounded-xl border border-gray-600/60 text-xs">
           <div className="flex items-center gap-2.5 min-w-0">
             {user?.image ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.image} alt={user.name} className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-500" />
+              <img src={user.image} alt={user.name} className="w-9 h-9 rounded-full object-cover shrink-0 border border-gray-500" />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center">
+              <div className="w-9 h-9 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center shrink-0">
                 {user?.name?.[0] || 'U'}
               </div>
             )}
             <div className="min-w-0">
-              <span className="font-semibold block truncate text-white">{user?.name || 'Google User'}</span>
-              <span className="text-gray-400 truncate block text-[11px]">{user?.email}</span>
+              <span className="font-semibold block truncate text-white text-sm">{user?.name || 'Google User'}</span>
+              <span className="text-gray-300 truncate block text-[11px] flex items-center gap-1.5 mt-0.5">
+                {selectedRole === 'teacher' ? (
+                  <span className="inline-flex items-center gap-1 text-emerald-400 font-bold">
+                    <Award className="w-3.5 h-3.5" /> Teacher / Faculty Member
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-emerald-400 font-bold">
+                    <GraduationCap className="w-3.5 h-3.5" /> Student Account
+                  </span>
+                )}
+              </span>
             </div>
           </div>
           <span className="px-2.5 py-1 bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-bold rounded-full shrink-0">
-            Unverified
+            Verification Pending
           </span>
-        </div>
-
-        {/* Role Confirmation Card Toggle */}
-        <div className="space-y-2">
-          <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-            Campus Role Identity
-          </label>
-          <div className="grid grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              onClick={() => handleRoleSelect('student')}
-              className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all cursor-pointer text-left ${
-                selectedRole === 'student'
-                  ? 'border-emerald-400 bg-emerald-500/20 text-white shadow-sm'
-                  : 'border-gray-700 bg-gray-900/40 text-gray-400 hover:bg-gray-700/50'
-              }`}
-            >
-              <GraduationCap className={`w-5 h-5 shrink-0 ${selectedRole === 'student' ? 'text-emerald-400' : 'text-gray-400'}`} />
-              <div className="min-w-0">
-                <span className="font-bold text-xs block text-white">Student</span>
-                <span className="text-[10px] text-gray-400 block truncate">Student ID Card</span>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleRoleSelect('teacher')}
-              className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all cursor-pointer text-left ${
-                selectedRole === 'teacher'
-                  ? 'border-emerald-400 bg-emerald-500/20 text-white shadow-sm'
-                  : 'border-gray-700 bg-gray-900/40 text-gray-400 hover:bg-gray-700/50'
-              }`}
-            >
-              <Award className={`w-5 h-5 shrink-0 ${selectedRole === 'teacher' ? 'text-emerald-400' : 'text-gray-400'}`} />
-              <div className="min-w-0">
-                <span className="font-bold text-xs block text-white truncate">Teacher / Faculty</span>
-                <span className="text-[10px] text-gray-400 block truncate">Faculty ID Card</span>
-              </div>
-            </button>
-          </div>
         </div>
 
         {error && <Alert type="error">{error}</Alert>}
