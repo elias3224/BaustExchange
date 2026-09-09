@@ -8,5 +8,12 @@ export async function GET(req: NextRequest) {
     where: { enabled: true },
     orderBy: { name: 'asc' },
   });
-  return NextResponse.json({ categories });
+  return NextResponse.json(
+    { categories },
+    {
+      headers: {
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      },
+    }
+  );
 }

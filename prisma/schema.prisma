@@ -109,6 +109,9 @@ model User {
   reports       Report[] @relation("ReportsMade")
   activities    Activity[]
   payments      Payment[]
+
+  @@index([status])
+  @@index([role])
 }
 
 /**
@@ -154,6 +157,12 @@ model Listing {
   requests ExchangeRequest[]
   messages Message[]
   reports  Report[]
+
+  @@index([status, createdAt])
+  @@index([isFeatured, createdAt])
+  @@index([userId])
+  @@index([categoryId])
+  @@index([transactionType])
 }
 
 /**

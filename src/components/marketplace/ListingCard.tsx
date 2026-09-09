@@ -50,7 +50,7 @@ export function ListingCard({ listing }: ListingCardProps) {
         )}
         {listing.images.length > 0 ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={listing.images[0].url} alt={listing.title} className="w-full h-full object-cover" />
+          <img src={listing.images[0].url} alt={listing.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">No image</div>
         )}
@@ -90,7 +90,7 @@ export function ListingCard({ listing }: ListingCardProps) {
           <div className="flex items-center gap-1.5 mt-1 pt-1 border-t border-gray-100">
             {listing.user.image ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={listing.user.image} alt={listing.user.name ?? ''} className="w-5 h-5 rounded-full object-cover" />
+              <img src={listing.user.image} alt={listing.user.name ?? ''} loading="lazy" decoding="async" className="w-5 h-5 rounded-full object-cover" />
             ) : (
               <div className="w-5 h-5 rounded-full bg-gray-200" />
             )}
