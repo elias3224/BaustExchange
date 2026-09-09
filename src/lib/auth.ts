@@ -123,7 +123,7 @@ export const authOptions = {
         try {
           let dbUser = await prisma.user.findUnique({
             where: { email },
-            select: { id: true, role: true, status: true, department: true, studentId: true, phone: true, name: true, image: true },
+            select: { id: true, role: true, status: true, isVerifiedSeller: true, department: true, studentId: true, phone: true, name: true, image: true },
           });
 
           if (!dbUser) {
@@ -142,6 +142,7 @@ export const authOptions = {
               id: created.id,
               role: created.role,
               status: created.status,
+              isVerifiedSeller: created.isVerifiedSeller,
               department: created.department,
               studentId: created.studentId,
               phone: created.phone,
@@ -154,6 +155,7 @@ export const authOptions = {
             token.id = dbUser.id;
             token.role = dbUser.role;
             token.status = dbUser.status;
+            token.isVerifiedSeller = dbUser.isVerifiedSeller;
             token.department = dbUser.department;
             token.studentId = dbUser.studentId;
             token.phone = dbUser.phone;
@@ -176,6 +178,7 @@ export const authOptions = {
         session.user.id = token.id as string;
         (session.user as any).role = token.role || 'student';
         (session.user as any).status = token.status || 'active';
+        (session.user as any).isVerifiedSeller = token.isVerifiedSeller ?? false;
         (session.user as any).department = token.department;
         (session.user as any).studentId = token.studentId;
         (session.user as any).phone = token.phone;

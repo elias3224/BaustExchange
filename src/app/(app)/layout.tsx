@@ -28,6 +28,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     redirect('/auth/logout');
   }
 
+  if (user.role !== 'admin' && !user.isVerifiedSeller) {
+    redirect('/verify-id');
+  }
+
   return (
     <SessionProvider session={session}>
       <SessionProviderInner user={session.user}>

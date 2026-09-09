@@ -55,6 +55,33 @@ export async function middleware(req: any) {
     return NextResponse.redirect(url);
   }
 
+  // Mandatory One-Time ID Card Verification Guard for non-admin users
+  const isVerified = token.isVerifiedSeller === true || token.role === 'admin';
+  const isVerifyPage = pathname === '/verify-id';
+  const isAllowedUnverifiedPath =
+    isVerifyPage ||
+    pathname.startsWith('/api/profile') ||
+    pathname.startsWith('/api/upload') ||
+    pathname.startsWith('/api/auth') ||
+    pathname === '/auth/logout';
+
+  if (!isVerified && !isAllowedUnverifiedPath) {
+    const isApi = pathname.startsWith('/api/');
+    if (isApi) {
+      return NextResponse.json({ error: 'ID Verification required' }, { status: 403 });
+    }
+    const url = req.nextUrl.clone();
+    url.pathname = '/verify-id';
+    return NextResponse.redirect(url);
+  }
+
+  // If already verified, redirect away from /verify-id to /dashboard
+  if (isVerified && isVerifyPage) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/dashboard';
+    return NextResponse.redirect(url);
+  }
+
   // Admin-only routes.
   if (pathname.startsWith('/admin') && token.role !== 'admin') {
     const url = req.nextUrl.clone();
