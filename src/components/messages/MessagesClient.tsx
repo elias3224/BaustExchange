@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Alert } from '@/components/ui/Alert';
@@ -22,22 +22,32 @@ type Msg = {
 export function MessagesClient({
   currentUserId,
   initialPartner,
-  messages,
+  messages: initialMessages,
 }: {
   currentUserId: string;
   initialPartner: string;
   messages: Msg[];
 }) {
   const router = useRouter();
+  const [allMessages, setAllMessages] = useState<Msg[]>(initialMessages);
   const [partner, setPartner] = useState(initialPartner);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [isPartnerTyping, setIsPartnerTyping] = useState(false);
 
-  // Group messages by conversation partner.
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync initial messages if prop changes
+  useEffect(() => {
+    setAllMessages(initialMessages);
+  }, [initialMessages]);
+
+  // Group messages by conversation partner
   const conversations = useMemo(() => {
     const map = new Map<string, { partner: { id: string; name: string | null; image: string | null }; last: Msg; unread: number }>();
-    for (const m of messages) {
+    for (const m of allMessages) {
       const pid = m.senderId === currentUserId ? m.receiverId : m.senderId;
       const p = m.senderId === currentUserId ? m.receiver : m.sender;
       const entry = map.get(pid) || { partner: p, last: m, unread: 0 };
@@ -49,7 +59,6 @@ export function MessagesClient({
       (a, b) => new Date(b.last.createdAt).getTime() - new Date(a.last.createdAt).getTime()
     );
 
-    // If initialPartner is provided and not already in list, add temporary entry
     if (initialPartner && !map.has(initialPartner)) {
       list.unshift({
         partner: { id: initialPartner, name: 'User', image: null },
@@ -68,35 +77,138 @@ export function MessagesClient({
     }
 
     return list;
-  }, [messages, currentUserId, initialPartner]);
-
-  const thread = useMemo(
-    () => messages.filter((m) => (m.senderId === partner && m.receiverId === currentUserId) || (m.senderId === currentUserId && m.receiverId === partner)),
-    [messages, partner, currentUserId]
-  );
+  }, [allMessages, currentUserId, initialPartner]);
 
   const activePartner = partner || (conversations.length > 0 ? conversations[0].partner.id : '');
   const partnerInfo = conversations.find((c) => c.partner.id === activePartner)?.partner;
+
+  const thread = useMemo(
+    () => allMessages.filter((m) => (m.senderId === activePartner && m.receiverId === currentUserId) || (m.senderId === currentUserId && m.receiverId === activePartner)),
+    [allMessages, activePartner, currentUserId]
+  );
+
+  // Auto-scroll to bottom on thread update or when partner starts typing
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [thread.length, isPartnerTyping, activePartner]);
+
+  // Real-time message polling every 3 seconds
+  useEffect(() => {
+    const fetchLatestMessages = async () => {
+      try {
+        const res = await fetch('/api/messages', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.messages) {
+            setAllMessages(data.messages);
+          }
+        }
+      } catch (err) {
+        console.error('Error polling messages:', err);
+      }
+    };
+
+    const interval = setInterval(fetchLatestMessages, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Poll typing status of active partner every 2 seconds
+  useEffect(() => {
+    if (!activePartner) return;
+
+    const checkTypingStatus = async () => {
+      try {
+        const res = await fetch(`/api/messages/typing?with=${activePartner}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          setIsPartnerTyping(Boolean(data.isTyping));
+        }
+      } catch (err) {
+        console.error('Error checking typing status:', err);
+      }
+    };
+
+    checkTypingStatus();
+    const interval = setInterval(checkTypingStatus, 2000);
+    return () => clearInterval(interval);
+  }, [activePartner]);
+
+  // Send typing ping when typing in input
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDraft(e.target.value);
+    if (!activePartner) return;
+
+    // Send typing status = true
+    fetch('/api/messages/typing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ receiverId: activePartner, isTyping: true }),
+    }).catch(() => {});
+
+    // Clear previous timeout
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+    // Stop typing status after 2.5 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      fetch('/api/messages/typing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receiverId: activePartner, isTyping: false }),
+      }).catch(() => {});
+    }, 2500);
+  };
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
     const recipientId = activePartner;
     if (!draft.trim() || !recipientId) return;
-    setSending(true); setError('');
+
+    const messageText = draft.trim();
+    setDraft('');
+    setSending(true);
+    setError('');
+
+    // Clear typing indicator on send
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    fetch('/api/messages/typing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ receiverId: recipientId, isTyping: false }),
+    }).catch(() => {});
+
+    // Optimistic message insertion
+    const optimisticMsg: Msg = {
+      id: 'opt-' + Date.now(),
+      senderId: currentUserId,
+      receiverId: recipientId,
+      message: messageText,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      sender: { id: currentUserId, name: 'You', image: null },
+      receiver: { id: recipientId, name: partnerInfo?.name || 'User', image: partnerInfo?.image || null },
+    };
+
+    setAllMessages((prev) => [...prev, optimisticMsg]);
+
     try {
       const res = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ receiverId: recipientId, message: draft.trim() }),
+        body: JSON.stringify({ receiverId: recipientId, message: messageText }),
       });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Failed to send');
       }
-      setDraft('');
       router.refresh();
     } catch (err: any) {
       setError(err.message);
+      // Remove optimistic message on error
+      setAllMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id));
     } finally {
       setSending(false);
     }
@@ -106,7 +218,12 @@ export function MessagesClient({
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-gray-800">Messages</h1>
+      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-gray-200 shadow-xs">
+        <div>
+          <h1 className="text-xl font-bold text-gray-800">Messages</h1>
+          <p className="text-xs text-gray-500">Real-time messaging with buyers and sellers</p>
+        </div>
+      </div>
 
       {!hasAnyConversations ? (
         <EmptyState
@@ -114,28 +231,32 @@ export function MessagesClient({
           description="Message a seller from any item page or wanted list to start a conversation."
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 min-h-[28rem]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 min-h-[30rem]">
           {/* Conversation list */}
-          <div className="md:col-span-1 border border-gray-200 rounded-md bg-white divide-y divide-gray-100 max-h-[32rem] overflow-y-auto">
+          <div className="md:col-span-1 border border-gray-200 rounded-lg bg-white divide-y divide-gray-100 max-h-[34rem] overflow-y-auto shadow-xs">
             {conversations.map((c) => (
               <button
                 key={c.partner.id}
                 onClick={() => setPartner(c.partner.id)}
-                className={`w-full text-left px-3 py-3 flex items-center gap-3.5 hover:bg-gray-50 transition-colors ${
+                className={`w-full text-left px-3.5 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors ${
                   activePartner === c.partner.id ? 'bg-brand-50/80 border-l-4 border-brand-500' : ''
                 }`}
               >
                 {c.partner.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={c.partner.image} alt={c.partner.name ?? ''} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                  <img src={c.partner.image} alt={c.partner.name ?? ''} className="w-10 h-10 rounded-full object-cover shrink-0 border border-gray-200" />
                 ) : (
-                  <div className="w-9 h-9 rounded-full bg-gray-200 shrink-0" />
+                  <div className="w-10 h-10 rounded-full bg-gray-200 shrink-0 flex items-center justify-center text-xs font-bold text-gray-600">
+                    {c.partner.name?.charAt(0) || 'U'}
+                  </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium text-gray-900 truncate flex items-center justify-between">
+                  <div className="text-sm font-semibold text-gray-900 truncate flex items-center justify-between">
                     <span>{c.partner.name || 'User'}</span>
                     {c.unread > 0 && (
-                      <span className="text-[10px] font-bold bg-red-500 text-white rounded-full px-1.5 py-0.5 ml-1">{c.unread}</span>
+                      <span className="text-[10px] font-bold bg-red-500 text-white rounded-full px-2 py-0.5 ml-1 animate-pulse">
+                        {c.unread}
+                      </span>
                     )}
                   </div>
                   <div className="text-xs text-gray-500 truncate mt-0.5">{c.last.message}</div>
@@ -144,23 +265,34 @@ export function MessagesClient({
             ))}
           </div>
 
-          {/* Thread */}
-          <div className="md:col-span-2 border border-gray-200 rounded-md bg-white flex flex-col max-h-[32rem] justify-between">
+          {/* Chat Thread */}
+          <div className="md:col-span-2 border border-gray-200 rounded-lg bg-white flex flex-col max-h-[34rem] justify-between shadow-xs">
             {activePartner ? (
               <>
-                <div className="px-4 py-3 border-b border-gray-200 text-sm font-semibold text-gray-800 flex items-center gap-2 bg-gray-50/50">
-                  {partnerInfo?.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={partnerInfo.image} alt="" className="w-6 h-6 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-6 h-6 rounded-full bg-gray-300" />
+                <div className="px-4 py-3 border-b border-gray-200 text-sm font-semibold text-gray-800 flex items-center justify-between bg-gray-50/70">
+                  <div className="flex items-center gap-2.5">
+                    {partnerInfo?.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={partnerInfo.image} alt="" className="w-7 h-7 rounded-full object-cover border border-gray-200" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-xs">
+                        {partnerInfo?.name?.charAt(0) || 'U'}
+                      </div>
+                    )}
+                    <span className="font-semibold text-gray-900">{partnerInfo?.name ?? 'User'}</span>
+                  </div>
+
+                  {isPartnerTyping && (
+                    <span className="text-xs text-brand-600 font-medium animate-pulse flex items-center gap-1">
+                      typing...
+                    </span>
                   )}
-                  <span>{partnerInfo?.name ?? 'User'}</span>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[16rem]">
+                {/* Messages Container */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[18rem]">
                   {thread.length === 0 ? (
-                    <p className="text-center text-xs text-gray-400 my-8">
+                    <p className="text-center text-xs text-gray-400 my-12">
                       No message history with this user. Type a message below to start the conversation!
                     </p>
                   ) : (
@@ -168,9 +300,9 @@ export function MessagesClient({
                       const mine = m.senderId === currentUserId;
                       return (
                         <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[75%] rounded-lg px-3.5 py-2 text-sm shadow-xs ${mine ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-800'}`}>
-                            <div>{m.message}</div>
-                            <div className={`text-[10px] mt-1 text-right ${mine ? 'text-brand-100' : 'text-gray-400'}`}>
+                          <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm shadow-xs ${mine ? 'bg-brand-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none border border-gray-200/80'}`}>
+                            <div className="break-words leading-relaxed">{m.message}</div>
+                            <div className={`text-[10px] mt-1 text-right font-medium ${mine ? 'text-brand-100' : 'text-gray-400'}`}>
                               {timeAgo(m.createdAt)}
                             </div>
                           </div>
@@ -178,20 +310,36 @@ export function MessagesClient({
                       );
                     })
                   )}
+
+                  {/* Typing Indicator Bubble */}
+                  {isPartnerTyping && (
+                    <div className="flex justify-start animate-in fade-in duration-200">
+                      <div className="bg-gray-100 text-gray-600 rounded-2xl rounded-bl-none px-4 py-2.5 text-xs flex items-center gap-2 shadow-2xs border border-gray-200">
+                        <span className="font-medium text-gray-600">{partnerInfo?.name || 'User'} is typing</span>
+                        <span className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                          <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                          <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" />
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
 
-                <form onSubmit={send} className="p-3 border-t border-gray-200 flex gap-2 bg-gray-50/50">
+                {/* Input Form */}
+                <form onSubmit={send} className="p-3 border-t border-gray-200 flex gap-2 bg-gray-50/70">
                   <input
                     type="text"
                     value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    placeholder="Type a message…"
-                    className="flex-1 px-3.5 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500 bg-white"
+                    onChange={handleInputChange}
+                    placeholder={`Message ${partnerInfo?.name || 'User'}...`}
+                    className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white"
                   />
                   <button
                     type="submit"
                     disabled={sending || !draft.trim()}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-md hover:bg-brand-600 disabled:opacity-50 transition-colors shadow-sm"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-brand-600 rounded-full hover:bg-brand-700 disabled:opacity-50 transition-colors shadow-sm shrink-0"
                   >
                     <Send className="w-4 h-4" /> Send
                   </button>
