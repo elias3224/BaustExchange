@@ -1,12 +1,13 @@
 // src/app/api/profile/route.ts
 // GET  -> current user's full profile (from the database)
-// PATCH -> update department / studentId / phone / image
+// PATCH -> update department / studentId / phone / image / role
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { currentUser } from '@/lib/authz';
 import { updateProfileSchema } from '@/lib/validations';
 import { rateLimit, clientIp } from '@/lib/ratelimit';
 import { logActivity, ActivityType } from '@/lib/activity';
+import { ADMIN_EMAILS } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,7 @@ export async function GET() {
       role: true,
       status: true,
       isVerifiedSeller: true,
+      hasSelectedRole: true,
       department: true,
       studentId: true,
       phone: true,
@@ -51,6 +53,16 @@ export async function PATCH(req: NextRequest) {
     }
 
     const data = parsed.data;
+    const isTargetAdmin = user.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+    
+    // Prevent normal users from changing role to admin
+    let roleToSave: string | undefined = undefined;
+    if (isTargetAdmin || user.role === 'admin') {
+      roleToSave = 'admin';
+    } else if (data.role === 'student' || data.role === 'teacher') {
+      roleToSave = data.role;
+    }
+
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -58,10 +70,10 @@ export async function PATCH(req: NextRequest) {
         studentId: data.studentId || null,
         phone: data.phone || null,
         ...(data.image ? { image: data.image } : {}),
-        ...(data.role ? { role: data.role as any } : {}),
+        ...(roleToSave ? { role: roleToSave as any, hasSelectedRole: true } : {}),
         ...(data.isVerifiedSeller !== undefined ? { isVerifiedSeller: data.isVerifiedSeller } : {}),
       },
-      select: { id: true, department: true, studentId: true, phone: true, image: true, role: true, isVerifiedSeller: true },
+      select: { id: true, department: true, studentId: true, phone: true, image: true, role: true, isVerifiedSeller: true, hasSelectedRole: true },
     });
 
     await logActivity(ActivityType.LISTING_UPDATED, 'Updated profile', user.id, ip);

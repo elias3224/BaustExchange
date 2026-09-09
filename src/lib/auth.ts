@@ -3,7 +3,9 @@ import type { NextAuthConfig } from 'next-auth';
 import Google from 'next-auth/providers/google';
 import prisma from '@/lib/prisma';
 
-const ADMIN_EMAILS = ['eliasahmad3224@gmail.com'];
+export const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'eliasahmad3224@gmail.com')
+  .split(',')
+  .map((e) => e.trim().toLowerCase());
 
 export const authOptions = {
   secret: process.env.AUTH_SECRET,
@@ -43,7 +45,7 @@ export const authOptions = {
           where: {
             OR: [
               ...(googleId ? [{ googleId }] : []),
-              { email },
+              { email: email.toLowerCase() },
             ],
           },
         });
@@ -63,17 +65,18 @@ export const authOptions = {
               ...(googleId ? { googleId } : {}),
               name: user.name ?? existing.name,
               image: user.image ?? existing.image,
-              ...(isTargetAdmin ? { role: 'admin' } : {}),
+              ...(isTargetAdmin ? { role: 'admin', hasSelectedRole: true } : {}),
             },
           });
         } else {
           const newUser = await prisma.user.create({
             data: {
               googleId: googleId || email,
-              email,
+              email: email.toLowerCase(),
               name: user.name ?? email.split('@')[0] ?? 'User',
               image: user.image,
               role: isTargetAdmin ? 'admin' : 'student',
+              hasSelectedRole: isTargetAdmin ? true : false,
               status: 'active',
             },
           });
@@ -120,21 +123,34 @@ export const authOptions = {
       }
       const email = user?.email || token?.email;
       if (email) {
+        const isTargetAdmin = ADMIN_EMAILS.includes(email.toLowerCase());
+
         try {
           let dbUser = await prisma.user.findUnique({
-            where: { email },
-            select: { id: true, role: true, status: true, isVerifiedSeller: true, department: true, studentId: true, phone: true, name: true, image: true },
+            where: { email: email.toLowerCase() },
+            select: {
+              id: true,
+              role: true,
+              status: true,
+              isVerifiedSeller: true,
+              hasSelectedRole: true,
+              department: true,
+              studentId: true,
+              phone: true,
+              name: true,
+              image: true,
+            },
           });
 
           if (!dbUser) {
-            const isTargetAdmin = ADMIN_EMAILS.includes(email.toLowerCase());
             const created = await prisma.user.create({
               data: {
                 googleId: token.sub || email,
-                email,
+                email: email.toLowerCase(),
                 name: token.name || email.split('@')[0] || 'User',
                 image: token.picture,
                 role: isTargetAdmin ? 'admin' : 'student',
+                hasSelectedRole: isTargetAdmin ? true : false,
                 status: 'active',
               },
             });
@@ -143,6 +159,7 @@ export const authOptions = {
               role: created.role,
               status: created.status,
               isVerifiedSeller: created.isVerifiedSeller,
+              hasSelectedRole: created.hasSelectedRole,
               department: created.department,
               studentId: created.studentId,
               phone: created.phone,
@@ -153,9 +170,10 @@ export const authOptions = {
 
           if (dbUser) {
             token.id = dbUser.id;
-            token.role = dbUser.role;
+            token.role = isTargetAdmin ? 'admin' : dbUser.role;
             token.status = dbUser.status;
             token.isVerifiedSeller = dbUser.isVerifiedSeller;
+            token.hasSelectedRole = isTargetAdmin ? true : dbUser.hasSelectedRole;
             token.department = dbUser.department;
             token.studentId = dbUser.studentId;
             token.phone = dbUser.phone;
@@ -166,8 +184,9 @@ export const authOptions = {
           console.error('jwt error fetching dbUser', e);
         }
 
-        if (ADMIN_EMAILS.includes(email.toLowerCase())) {
+        if (isTargetAdmin) {
           token.role = 'admin';
+          token.hasSelectedRole = true;
         }
       }
       return token;
@@ -179,6 +198,7 @@ export const authOptions = {
         (session.user as any).role = token.role || 'student';
         (session.user as any).status = token.status || 'active';
         (session.user as any).isVerifiedSeller = token.isVerifiedSeller ?? false;
+        (session.user as any).hasSelectedRole = token.hasSelectedRole ?? true;
         (session.user as any).department = token.department;
         (session.user as any).studentId = token.studentId;
         (session.user as any).phone = token.phone;

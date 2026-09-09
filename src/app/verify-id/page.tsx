@@ -45,16 +45,18 @@ export default function VerifyIdPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Automatically load the role selected before login
+  // Automatically load the saved role from database/session
   useEffect(() => {
-    try {
-      const savedRole = localStorage.getItem('baust_pre_auth_role');
-      if (savedRole === 'teacher' || savedRole === 'student') {
-        setSelectedRole(savedRole);
-      } else if (user?.role === 'teacher' || user?.role === 'student') {
-        setSelectedRole(user.role);
-      }
-    } catch {}
+    if (user?.role === 'teacher' || user?.role === 'student') {
+      setSelectedRole(user.role);
+    } else {
+      try {
+        const savedRole = localStorage.getItem('baust_pre_auth_role');
+        if (savedRole === 'teacher' || savedRole === 'student') {
+          setSelectedRole(savedRole);
+        }
+      } catch {}
+    }
   }, [user]);
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {

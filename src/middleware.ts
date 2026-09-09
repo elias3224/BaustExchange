@@ -14,6 +14,30 @@ export async function middleware(req: any) {
   const { pathname } = req.nextUrl;
 
   if (PUBLIC_FILE.test(pathname) || PUBLIC_STATIC.test(pathname) || PUBLIC_PAGE.test(pathname)) {
+    // If user is already authenticated and visits /login, redirect to appropriate dashboard
+    if (pathname === '/login') {
+      const isHttps = req.nextUrl.protocol === 'https:' || req.headers.get('x-forwarded-proto') === 'https';
+      const cookieName =
+        req.cookies.get('__Secure-authjs.session-token')?.value ? '__Secure-authjs.session-token' :
+        req.cookies.get('authjs.session-token')?.value ? 'authjs.session-token' :
+        req.cookies.get('__Secure-next-auth.session-token')?.value ? '__Secure-next-auth.session-token' :
+        'next-auth.session-token';
+
+      const token = await getToken({ req, secret: process.env.AUTH_SECRET, cookieName, secureCookie: isHttps });
+      if (token) {
+        const url = req.nextUrl.clone();
+        if (token.role === 'admin') {
+          url.pathname = '/admin';
+        } else if (token.hasSelectedRole === false) {
+          url.pathname = '/select-role';
+        } else if (!token.isVerifiedSeller) {
+          url.pathname = '/verify-id';
+        } else {
+          url.pathname = '/dashboard';
+        }
+        return NextResponse.redirect(url);
+      }
+    }
     return NextResponse.next();
   }
 
@@ -55,11 +79,55 @@ export async function middleware(req: any) {
     return NextResponse.redirect(url);
   }
 
-  // Mandatory One-Time ID Card Verification Guard for non-admin users
-  const isVerified = token.isVerifiedSeller === true || token.role === 'admin';
+  // ADMIN ROLE ENFORCEMENT
+  if (token.role === 'admin') {
+    // Admin bypasses select-role and verify-id
+    if (pathname === '/select-role' || pathname === '/verify-id') {
+      const url = req.nextUrl.clone();
+      url.pathname = '/admin';
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
+  }
+
+  // NORMAL USER ROLE ENFORCEMENT (Student / Teacher)
+  // 1. Prevent normal users from accessing admin routes
+  if (pathname.startsWith('/admin')) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/dashboard';
+    return NextResponse.redirect(url);
+  }
+
+  // 2. Check if user needs one-time role selection
+  const isSelectRolePage = pathname === '/select-role';
+  const isAllowedPathBeforeRole =
+    isSelectRolePage ||
+    pathname.startsWith('/api/auth') ||
+    pathname === '/auth/logout';
+
+  if (token.hasSelectedRole === false && !isAllowedPathBeforeRole) {
+    const isApi = pathname.startsWith('/api/');
+    if (isApi) {
+      return NextResponse.json({ error: 'Role selection required' }, { status: 403 });
+    }
+    const url = req.nextUrl.clone();
+    url.pathname = '/select-role';
+    return NextResponse.redirect(url);
+  }
+
+  // 3. If role is already selected and user visits /select-role, redirect away
+  if (token.hasSelectedRole === true && isSelectRolePage) {
+    const url = req.nextUrl.clone();
+    url.pathname = token.isVerifiedSeller ? '/dashboard' : '/verify-id';
+    return NextResponse.redirect(url);
+  }
+
+  // 4. Mandatory One-Time ID Card Verification Guard for non-admin users
+  const isVerified = token.isVerifiedSeller === true;
   const isVerifyPage = pathname === '/verify-id';
   const isAllowedUnverifiedPath =
     isVerifyPage ||
+    isSelectRolePage ||
     pathname.startsWith('/api/profile') ||
     pathname.startsWith('/api/upload') ||
     pathname.startsWith('/api/auth') ||
@@ -77,13 +145,6 @@ export async function middleware(req: any) {
 
   // If already verified, redirect away from /verify-id to /dashboard
   if (isVerified && isVerifyPage) {
-    const url = req.nextUrl.clone();
-    url.pathname = '/dashboard';
-    return NextResponse.redirect(url);
-  }
-
-  // Admin-only routes.
-  if (pathname.startsWith('/admin') && token.role !== 'admin') {
     const url = req.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);

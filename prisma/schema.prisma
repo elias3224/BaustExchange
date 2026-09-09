@@ -94,6 +94,7 @@ model User {
   phone         String?
   status        UserStatus @default(active)
   isVerifiedSeller    Boolean   @default(false)
+  hasSelectedRole     Boolean   @default(false)
   subscriptionPlan    String    @default("free")
   subscriptionExpires DateTime?
   createdAt     DateTime  @default(now())
