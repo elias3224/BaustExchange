@@ -30,8 +30,6 @@ export async function middleware(req: any) {
           url.pathname = '/admin';
         } else if (token.hasSelectedRole === false) {
           url.pathname = '/select-role';
-        } else if (!token.isVerifiedSeller) {
-          url.pathname = '/verify-id';
         } else {
           url.pathname = '/dashboard';
         }
@@ -81,8 +79,8 @@ export async function middleware(req: any) {
 
   // ADMIN ROLE ENFORCEMENT
   if (token.role === 'admin') {
-    // Admin bypasses select-role and verify-id
-    if (pathname === '/select-role' || pathname === '/verify-id') {
+    // Admin bypasses select-role
+    if (pathname === '/select-role') {
       const url = req.nextUrl.clone();
       url.pathname = '/admin';
       return NextResponse.redirect(url);
@@ -117,34 +115,6 @@ export async function middleware(req: any) {
 
   // 3. If role is already selected and user visits /select-role, redirect away
   if (token.hasSelectedRole === true && isSelectRolePage) {
-    const url = req.nextUrl.clone();
-    url.pathname = token.isVerifiedSeller ? '/dashboard' : '/verify-id';
-    return NextResponse.redirect(url);
-  }
-
-  // 4. Mandatory One-Time ID Card Verification Guard for non-admin users
-  const isVerified = token.isVerifiedSeller === true;
-  const isVerifyPage = pathname === '/verify-id';
-  const isAllowedUnverifiedPath =
-    isVerifyPage ||
-    isSelectRolePage ||
-    pathname.startsWith('/api/profile') ||
-    pathname.startsWith('/api/upload') ||
-    pathname.startsWith('/api/auth') ||
-    pathname === '/auth/logout';
-
-  if (!isVerified && !isAllowedUnverifiedPath) {
-    const isApi = pathname.startsWith('/api/');
-    if (isApi) {
-      return NextResponse.json({ error: 'ID Verification required' }, { status: 403 });
-    }
-    const url = req.nextUrl.clone();
-    url.pathname = '/verify-id';
-    return NextResponse.redirect(url);
-  }
-
-  // If already verified, redirect away from /verify-id to /dashboard
-  if (isVerified && isVerifyPage) {
     const url = req.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);

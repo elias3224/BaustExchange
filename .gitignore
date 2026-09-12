@@ -37,4 +37,5 @@ yarn-error.log*
 .env*
 tsc_out*.txt
 devlog.txt
+eng.traineddata
 

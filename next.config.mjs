@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   compress: true,
+  serverExternalPackages: ['tesseract.js'],
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [

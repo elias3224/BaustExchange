@@ -50,7 +50,8 @@ export const updateProfileSchema = z.object({
   phone: z.string().max(30).nullable().optional().or(z.literal('')),
   image: z.string().url('Invalid url').nullable().optional().or(z.literal('')),
   role: z.enum(['student', 'teacher']).optional(),
-  isVerifiedSeller: z.boolean().optional(),
+  // NOTE: isVerifiedSeller is intentionally NOT accepted from clients.
+  // Verification is granted only by an admin via /api/admin/users/[id].
 });
 
 export const createReportSchema = z.object({
@@ -78,4 +79,6 @@ export const userUpdateSchema = z.object({
   department: z.string().max(80).nullable().optional().or(z.literal('')),
   studentId: z.string().max(40).nullable().optional().or(z.literal('')),
   phone: z.string().max(30).nullable().optional().or(z.literal('')),
+  idCardAction: z.enum(['approve', 'reject']).optional(),
+  idCardRejectReason: z.string().max(300).optional(),
 });

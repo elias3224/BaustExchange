@@ -23,11 +23,7 @@ export default function SelectRolePage() {
       if (user?.role === 'admin') {
         router.replace('/admin');
       } else if (user?.hasSelectedRole) {
-        if (!user?.isVerifiedSeller) {
-          router.replace('/verify-id');
-        } else {
-          router.replace('/dashboard');
-        }
+        router.replace('/dashboard');
       }
     }
   }, [status, user, router]);
@@ -48,7 +44,7 @@ export default function SelectRolePage() {
       if (!res.ok) throw new Error(data.error || 'Failed to save role');
 
       // Refresh session & redirect
-      window.location.href = data.isVerifiedSeller ? '/dashboard' : '/verify-id';
+      window.location.href = '/dashboard';
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');
       setSubmitting(false);

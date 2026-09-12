@@ -143,6 +143,9 @@ export const authOptions = {
               status: true,
               isVerifiedSeller: true,
               hasSelectedRole: true,
+              idCardStatus: true,
+              idCardUrl: true,
+              idCardRejectReason: true,
               department: true,
               studentId: true,
               phone: true,
@@ -163,18 +166,11 @@ export const authOptions = {
                 status: 'active',
               },
             });
-            dbUser = {
-              id: created.id,
-              role: created.role,
-              status: created.status,
-              isVerifiedSeller: created.isVerifiedSeller,
-              hasSelectedRole: created.hasSelectedRole,
-              department: created.department,
-              studentId: created.studentId,
-              phone: created.phone,
-              name: created.name,
-              image: created.image,
-            };
+            // The freshly created row is a full User, which structurally
+            // satisfies the `select` shape above. Assign it directly instead
+            // of re-mirroring every field - a manual copy drifts out of sync
+            // with the schema and breaks Prisma's derived result types.
+            dbUser = created;
           }
 
           if (dbUser) {
@@ -182,6 +178,9 @@ export const authOptions = {
             token.role = isTargetAdmin ? 'admin' : dbUser.role;
             token.status = dbUser.status;
             token.isVerifiedSeller = dbUser.isVerifiedSeller;
+            token.idCardStatus = dbUser.idCardStatus;
+            token.idCardUrl = dbUser.idCardUrl;
+            token.idCardRejectReason = dbUser.idCardRejectReason;
             token.hasSelectedRole = isTargetAdmin ? true : dbUser.hasSelectedRole;
             token.department = dbUser.department;
             token.studentId = dbUser.studentId;
@@ -207,6 +206,9 @@ export const authOptions = {
         (session.user as any).role = token.role || 'student';
         (session.user as any).status = token.status || 'active';
         (session.user as any).isVerifiedSeller = token.isVerifiedSeller ?? false;
+        (session.user as any).idCardStatus = token.idCardStatus || 'none';
+        (session.user as any).idCardUrl = token.idCardUrl;
+        (session.user as any).idCardRejectReason = token.idCardRejectReason;
         (session.user as any).hasSelectedRole = token.hasSelectedRole ?? true;
         (session.user as any).department = token.department;
         (session.user as any).studentId = token.studentId;

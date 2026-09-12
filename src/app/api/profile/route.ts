@@ -71,7 +71,9 @@ export async function PATCH(req: NextRequest) {
         phone: data.phone || null,
         ...(data.image ? { image: data.image } : {}),
         ...(roleToSave ? { role: roleToSave as any, hasSelectedRole: true } : {}),
-        ...(data.isVerifiedSeller !== undefined ? { isVerifiedSeller: data.isVerifiedSeller } : {}),
+        // NOTE: isVerifiedSeller can no longer be set from here. ID card
+        // verification goes through POST /api/profile/verify-id (server OCR)
+        // and is granted by an admin via /api/admin/users/[id].
       },
       select: { id: true, department: true, studentId: true, phone: true, image: true, role: true, isVerifiedSeller: true, hasSelectedRole: true },
     });

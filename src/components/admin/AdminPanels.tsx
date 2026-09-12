@@ -278,6 +278,91 @@ export function AdminUserRow({ user, currentAdminId }: { user: any; currentAdmin
   );
 }
 
+export function AdminIdCardRow({ user }: { user: any }) {
+  const { busy, error, run } = useAdminAction();
+  const [confirmReject, setConfirmReject] = useState(false);
+
+  return (
+    <div className="border border-amber-200 rounded-md bg-amber-50/40 p-4 flex flex-col sm:flex-row gap-4">
+      <a
+        href={user.idCardUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-28 h-18 sm:w-36 shrink-0 bg-white border border-gray-200 rounded-md overflow-hidden"
+        title="Open ID card in new tab"
+      >
+        {user.idCardUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={user.idCardUrl} alt={`ID card of ${user.name}`} className="w-full h-full object-contain" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-400 text-[10px]">No image</div>
+        )}
+      </a>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-bold text-gray-900">{user.name}</div>
+        <div className="text-xs text-gray-600">
+          {user.email} • <span className="capitalize font-semibold">{user.role}</span>
+          {user.department ? ` • ${user.department}` : ''}
+          {user.studentId ? ` • ID: ${user.studentId}` : ''}
+        </div>
+        <div className="text-[11px] text-gray-500 mt-0.5">Submitted {timeAgo(user.updatedAt)}</div>
+        {user.idCardOcrNote && (
+          <div
+            className={`text-[11px] mt-1 font-semibold ${
+              user.idCardOcrNote.startsWith('OCR PASS') ? 'text-emerald-700' : 'text-amber-700'
+            }`}
+          >
+            {user.idCardOcrNote.startsWith('OCR PASS') ? '✓' : '⚠'} {user.idCardOcrNote}
+          </div>
+        )}
+        {error && <div className="text-xs text-red-600 mt-1">{error}</div>}
+        <div className="flex flex-wrap gap-2 mt-2">
+          {confirmReject ? (
+            <>
+              <button
+                onClick={() =>
+                  run(`/api/admin/users/${user.id}`, {
+                    idCardAction: 'reject',
+                    idCardRejectReason: 'ID card could not be verified by admin review.',
+                  })
+                }
+                disabled={busy}
+                className="px-3 py-1 text-xs font-bold text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-60 animate-pulse"
+              >
+                Confirm Reject?
+              </button>
+              <button
+                onClick={() => setConfirmReject(false)}
+                disabled={busy}
+                className="px-2.5 py-1 text-xs font-semibold border border-gray-300 rounded-md hover:bg-gray-100 text-gray-600"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => run(`/api/admin/users/${user.id}`, { idCardAction: 'approve' })}
+                disabled={busy}
+                className="px-3 py-1 text-xs font-bold text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-60 shadow-xs"
+              >
+                Approve ID
+              </button>
+              <button
+                onClick={() => setConfirmReject(true)}
+                disabled={busy}
+                className="px-3 py-1 text-xs font-medium text-white bg-red-500 rounded-md hover:bg-red-600 disabled:opacity-60"
+              >
+                Reject
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AdminPaymentRow({ payment }: { payment: any }) {
   const { busy, error, run } = useAdminAction();
 

@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { currentUser } from '@/lib/authz';
-import { AdminListingRow, AdminReportRow, AdminUserRow, AdminPaymentRow } from '@/components/admin/AdminPanels';
-import { Package, Flag, Users, CreditCard } from 'lucide-react';
+import { AdminListingRow, AdminReportRow, AdminUserRow, AdminPaymentRow, AdminIdCardRow } from '@/components/admin/AdminPanels';
+import { Package, Flag, Users, CreditCard, IdCard } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,13 +13,14 @@ export default async function AdminPage() {
     redirect('/dashboard');
   }
 
-  const [stats, pendingListings, reports, users, payments] = await Promise.all([
+  const [stats, pendingListings, reports, users, payments, pendingIdCards] = await Promise.all([
     Promise.all([
       prisma.listing.count({ where: { status: 'pending' } }),
       prisma.listing.count({ where: { status: 'active' } }),
       prisma.user.count(),
       prisma.report.count({ where: { status: 'pending' } }),
       prisma.payment.count({ where: { status: 'pending' } }),
+      prisma.user.count({ where: { idCardStatus: 'pending' } }),
     ]),
     prisma.listing.findMany({
       where: { status: 'pending' },
@@ -55,18 +56,28 @@ export default async function AdminPage() {
         user: { select: { id: true, name: true, email: true } },
       },
     }),
+    prisma.user.findMany({
+      where: { idCardStatus: 'pending' },
+      orderBy: { updatedAt: 'desc' },
+      take: 20,
+      select: {
+        id: true, name: true, email: true, role: true, department: true, studentId: true,
+        idCardUrl: true, idCardOcrNote: true, updatedAt: true,
+      },
+    }),
   ]);
 
-  const [pendingCount, activeCount, userCount, pendingReports, pendingPayments] = stats;
+  const [pendingCount, activeCount, userCount, pendingReports, pendingPayments, pendingIdCount] = stats;
 
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold text-gray-800">Admin Panel</h1>
 
       {/* Stats */}
-      <section className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
+      <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {[
           { label: 'Pending Payments', value: pendingPayments, icon: <CreditCard className="w-5 h-5" /> },
+          { label: 'Pending IDs', value: pendingIdCount, icon: <IdCard className="w-5 h-5" /> },
           { label: 'Pending Listings', value: pendingCount, icon: <Package className="w-5 h-5" /> },
           { label: 'Active Listings', value: activeCount, icon: <Package className="w-5 h-5" /> },
           { label: 'Users', value: userCount, icon: <Users className="w-5 h-5" /> },
@@ -80,6 +91,18 @@ export default async function AdminPage() {
             </div>
           </div>
         ))}
+      </section>
+
+      {/* ID Card Verification Requests */}
+      <section>
+        <h2 className="text-lg font-semibold mb-3">ID Card Verification Requests</h2>
+        {pendingIdCards.length === 0 ? (
+          <p className="text-sm text-gray-500">No ID cards awaiting review.</p>
+        ) : (
+          <div className="space-y-3">
+            {pendingIdCards.map((u) => <AdminIdCardRow key={u.id} user={u as any} />)}
+          </div>
+        )}
       </section>
 
       {/* Payments */}

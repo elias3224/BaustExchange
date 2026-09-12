@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert } from '@/components/ui/Alert';
 import { DEPARTMENTS } from '@/lib/utils';
+import { verifyIdCardImage } from '@/lib/idCardVerify';
 import {
   GraduationCap,
   Award,
@@ -88,29 +89,21 @@ export function ProfileForm({ initial }: ProfileFormProps) {
     const previewUrl = URL.createObjectURL(file);
     setIdCardPreview(previewUrl);
 
-    // Live BAUST ID Verification Analysis
+    // Strict BAUST ID Verification — runs real OCR, rejects any random photo.
     setVerifying(true);
     setVerificationResult(null);
 
-    setTimeout(() => {
-      // Validate file size, dimensions, and type
-      const isValid = file.size > 5000; // valid image check
-
-      if (isValid) {
-        setVerificationResult({
-          verified: true,
-          confidence: 98,
-          message: 'Official BAUST Student/Teacher ID Format Verified!',
-        });
-      } else {
+    verifyIdCardImage(file, form.role === 'teacher' ? 'teacher' : 'student')
+      .then(setVerificationResult)
+      .catch(() =>
         setVerificationResult({
           verified: false,
-          confidence: 45,
-          message: 'Unclear image. Please upload a clear photo of your BAUST ID Card.',
-        });
-      }
-      setVerifying(false);
-    }, 1200);
+          confidence: 30,
+          message:
+            'Could not read the image. Please upload a brighter, sharper photo of your BAUST ID Card.',
+        })
+      )
+      .finally(() => setVerifying(false));
   }
 
   function removeIdCard() {
@@ -140,31 +133,38 @@ export function ProfileForm({ initial }: ProfileFormProps) {
         uploadedAvatarUrl = uploadData.url;
       }
 
-      let uploadedIdCardUrl = '';
-      if (idCardFile) {
-        const fd = new FormData();
-        fd.append('file', idCardFile);
-        const uploadRes = await fetch('/api/upload', { method: 'POST', body: fd });
-        const uploadData = await uploadRes.json();
-        if (!uploadRes.ok) throw new Error(uploadData.error || 'Failed to upload ID Card image');
-        uploadedIdCardUrl = uploadData.url;
-      }
-
-      const isVerified = verificationResult?.verified ?? initial.isVerifiedSeller ?? false;
+      // NOTE: the ID card image itself is stored by /api/profile/verify-id
+      // below (along with the admin-review status), not by /api/upload.
 
       const res = await fetch('/api/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
-          isVerifiedSeller: isVerified,
           ...(uploadedAvatarUrl ? { image: uploadedAvatarUrl } : {}),
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update profile');
-      setSuccess('Profile details & BAUST verification saved successfully!');
+
+      // If a new ID card photo was uploaded, send it to the server
+      // verification endpoint regardless of the client OCR verdict — the
+      // server re-runs OCR and queues the card for admin review.
+      // isVerifiedSeller is only granted by an admin afterwards.
+      if (idCardFile) {
+        const fd = new FormData();
+        fd.append('file', idCardFile);
+        fd.append('role', form.role === 'teacher' ? 'teacher' : 'student');
+        const verifyRes = await fetch('/api/profile/verify-id', { method: 'POST', body: fd });
+        if (!verifyRes.ok) {
+          const verifyData = await verifyRes.json().catch(() => ({}));
+          throw new Error(verifyData.error || 'ID card submission failed. Please try again.');
+        }
+        setSuccess('Profile saved. ID card submitted — awaiting admin review!');
+      } else {
+        setSuccess('Profile details saved successfully!');
+      }
       router.refresh();
     } catch (err: any) {
       setError(err.message);

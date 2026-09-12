@@ -31,8 +31,6 @@ function LoginContent() {
         router.replace('/admin');
       } else if (user?.hasSelectedRole === false) {
         router.replace('/select-role');
-      } else if (!user?.isVerifiedSeller) {
-        router.replace('/verify-id');
       } else {
         router.replace('/dashboard');
       }

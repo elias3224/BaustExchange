@@ -68,6 +68,13 @@ enum ReportStatus {
   dismissed @map("dismissed")
 }
 
+enum IdCardStatus {
+  none     @map("none")
+  pending  @map("pending")
+  approved @map("approved")
+  rejected @map("rejected")
+}
+
 enum NotificationType {
   REQUEST_NEW      @map("request_new")
   REQUEST_ACCEPTED @map("request_accepted")
@@ -94,6 +101,11 @@ model User {
   phone         String?
   status        UserStatus @default(active)
   isVerifiedSeller    Boolean   @default(false)
+  idCardStatus        IdCardStatus @default(none)
+  idCardUrl           String?
+  idCardOcrNote       String?
+  idCardRejectReason  String?
+  idCardVerifiedAt    DateTime?
   hasSelectedRole     Boolean   @default(false)
   subscriptionPlan    String    @default("free")
   subscriptionExpires DateTime?

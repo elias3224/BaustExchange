@@ -39,9 +39,34 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (parsed.data.studentId !== undefined) data.studentId = parsed.data.studentId || null;
     if (parsed.data.phone !== undefined) data.phone = parsed.data.phone || null;
 
+    // ID card verification actions (only admins reach this route).
+    if (parsed.data.idCardAction === 'approve') {
+      data.isVerifiedSeller = true;
+      data.idCardStatus = 'approved';
+      data.idCardVerifiedAt = new Date();
+      data.idCardRejectReason = null;
+    } else if (parsed.data.idCardAction === 'reject') {
+      data.isVerifiedSeller = false;
+      data.idCardStatus = 'rejected';
+      data.idCardRejectReason =
+        parsed.data.idCardRejectReason || 'ID card could not be verified. Please upload again.';
+    }
+
     const updated = await prisma.user.update({ where: { id }, data });
 
-    if (parsed.data.status === 'blocked') {
+    if (parsed.data.idCardAction === 'approve') {
+      await createNotification(
+        id,
+        NotificationType.ADMIN,
+        '✅ Your BAUST ID card was approved! You now have full marketplace access.'
+      );
+    } else if (parsed.data.idCardAction === 'reject') {
+      await createNotification(
+        id,
+        NotificationType.ADMIN,
+        `❌ Your BAUST ID card was rejected: ${data.idCardRejectReason}`
+      );
+    } else if (parsed.data.status === 'blocked') {
       await createNotification(id, NotificationType.ADMIN, 'Your account has been blocked by an admin.');
     } else if (parsed.data.status === 'active') {
       await createNotification(id, NotificationType.ADMIN, 'Your account has been unblocked.');

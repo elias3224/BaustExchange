@@ -28,9 +28,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     redirect('/auth/logout');
   }
 
-  if (user.role !== 'admin' && !user.isVerifiedSeller) {
-    redirect('/verify-id');
-  }
+  // NOTE: Mandatory ID card verification gate removed. BAUST ID verification
+  // is now an optional profile action: users submit their ID card from
+  // /profile (POST /api/profile/verify-id) and an admin approves it —
+  // granting the "BAUST Verified" badge.
 
   return (
     <SessionProvider session={session}>
