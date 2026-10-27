@@ -26,14 +26,12 @@ export async function currentUser(req?: NextRequest) {
       const dbUser = await prisma.user.findUnique({ where: { email: session.user.email } });
       if (dbUser && dbUser.status !== 'blocked') return dbUser;
     }
-  } catch (e: any) {
-    if (e?.digest !== 'DYNAMIC_SERVER_USAGE') {
-      console.warn('currentUser auth() check fallback triggered:', e);
-    }
+  } catch (e) {
+    console.warn('currentUser auth() check fallback triggered:', e);
   }
 
-
   if (req) {
+    
     try {
       const token = await getToken({ req, secret: process.env.AUTH_SECRET, raw: false });
       if (token?.id) {

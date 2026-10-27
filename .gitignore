@@ -39,3 +39,7 @@ tsc_out*.txt
 devlog.txt
 eng.traineddata
 
+# temporary downloads and prompt exports
+*Claude*
+baust_exchange_prompts.*
+scripts/generate_prompts_file.js
