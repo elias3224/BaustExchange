@@ -43,3 +43,6 @@ eng.traineddata
 *Claude*
 baust_exchange_prompts.*
 scripts/generate_prompts_file.js
+
+.vercel
+.env*
