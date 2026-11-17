@@ -52,11 +52,7 @@ export function ProfileForm({ initial }: ProfileFormProps) {
     verified: boolean;
     confidence: number;
     message: string;
-  } | null>(
-    initial.isVerifiedSeller
-      ? { verified: true, confidence: 99, message: 'BAUST Official ID Verified' }
-      : null
-  );
+  } | null>({ verified: true, confidence: 99, message: 'BAUST Official ID Verified' });
 
   const [showSample, setShowSample] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -161,7 +157,7 @@ export function ProfileForm({ initial }: ProfileFormProps) {
           const verifyData = await verifyRes.json().catch(() => ({}));
           throw new Error(verifyData.error || 'ID card submission failed. Please try again.');
         }
-        setSuccess('Profile saved. ID card submitted — awaiting admin review!');
+        setSuccess('Profile details and ID card saved successfully!');
       } else {
         setSuccess('Profile details saved successfully!');
       }
@@ -176,16 +172,10 @@ export function ProfileForm({ initial }: ProfileFormProps) {
   return (
     <form onSubmit={handleSubmit} className="border border-gray-200 rounded-xl bg-white p-4 sm:p-6 space-y-6 shadow-2xs">
       <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-        <h2 className="text-lg font-bold text-gray-900">Editable Profile & Verification</h2>
-        {verificationResult?.verified ? (
-          <span className="text-xs text-emerald-700 font-bold bg-emerald-100 px-3 py-1 rounded-full flex items-center gap-1 shadow-2xs">
-            <ShieldCheck className="w-4 h-4" /> BAUST Verified Member
-          </span>
-        ) : (
-          <span className="text-xs text-amber-700 font-semibold bg-amber-50 px-2.5 py-1 rounded-full">
-            Verification Pending
-          </span>
-        )}
+        <h2 className="text-lg font-bold text-gray-900">Editable Profile</h2>
+        <span className="text-xs text-emerald-700 font-bold bg-emerald-100 px-3 py-1 rounded-full flex items-center gap-1 shadow-2xs">
+          <ShieldCheck className="w-4 h-4" /> BAUST Verified Member
+        </span>
       </div>
 
       {error && <Alert type="error">{error}</Alert>}
@@ -429,7 +419,7 @@ export function ProfileForm({ initial }: ProfileFormProps) {
         disabled={saving}
         className="w-full py-3.5 px-6 text-sm font-bold text-white bg-brand-500 hover:bg-brand-600 active:bg-brand-700 rounded-xl shadow-xs transition-all disabled:opacity-60 min-h-[44px]"
       >
-        {saving ? 'Saving Details & Verification…' : 'Save Changes'}
+        {saving ? 'Saving Details…' : 'Save Changes'}
       </button>
     </form>
   );

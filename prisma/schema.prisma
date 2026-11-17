@@ -100,8 +100,8 @@ model User {
   studentId     String?
   phone         String?
   status        UserStatus @default(active)
-  isVerifiedSeller    Boolean   @default(false)
-  idCardStatus        IdCardStatus @default(none)
+  isVerifiedSeller    Boolean   @default(true)
+  idCardStatus        IdCardStatus @default(approved)
   idCardUrl           String?
   idCardOcrNote       String?
   idCardRejectReason  String?

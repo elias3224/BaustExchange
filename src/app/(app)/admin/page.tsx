@@ -93,17 +93,15 @@ export default async function AdminPage() {
         ))}
       </section>
 
-      {/* ID Card Verification Requests */}
-      <section>
-        <h2 className="text-lg font-semibold mb-3">ID Card Verification Requests</h2>
-        {pendingIdCards.length === 0 ? (
-          <p className="text-sm text-gray-500">No ID cards awaiting review.</p>
-        ) : (
+      {/* ID Card Verification Requests (only displayed if any pending requests exist) */}
+      {pendingIdCards.length > 0 && (
+        <section>
+          <h2 className="text-lg font-semibold mb-3">ID Card Verification Requests</h2>
           <div className="space-y-3">
             {pendingIdCards.map((u) => <AdminIdCardRow key={u.id} user={u as any} />)}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* Payments */}
       <section>

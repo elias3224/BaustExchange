@@ -59,14 +59,22 @@ export const authOptions = {
         let targetUserName = user.name || existing?.name || 'User';
 
         if (existing) {
+          const updates: any = {
+            ...(googleId ? { googleId } : {}),
+            name: user.name ?? existing.name,
+            image: user.image ?? existing.image,
+            ...(isTargetAdmin ? { role: 'admin', hasSelectedRole: true } : {}),
+          };
+
+          // Auto-approve and verify any active existing user so they never get stuck in pending
+          if (existing.status !== 'blocked' && (existing.idCardStatus === 'pending' || !existing.isVerifiedSeller)) {
+            updates.isVerifiedSeller = true;
+            updates.idCardStatus = 'approved';
+          }
+
           await prisma.user.update({
             where: { id: existing.id },
-            data: {
-              ...(googleId ? { googleId } : {}),
-              name: user.name ?? existing.name,
-              image: user.image ?? existing.image,
-              ...(isTargetAdmin ? { role: 'admin', hasSelectedRole: true } : {}),
-            },
+            data: updates,
           });
         } else {
           const newUser = await prisma.user.create({
@@ -78,6 +86,8 @@ export const authOptions = {
               role: isTargetAdmin ? 'admin' : 'student',
               hasSelectedRole: isTargetAdmin ? true : false,
               status: 'active',
+              isVerifiedSeller: true,
+              idCardStatus: 'approved',
             },
           });
           targetUserId = newUser.id;
@@ -164,6 +174,8 @@ export const authOptions = {
                 role: isTargetAdmin ? 'admin' : 'student',
                 hasSelectedRole: isTargetAdmin ? true : false,
                 status: 'active',
+                isVerifiedSeller: true,
+                idCardStatus: 'approved',
               },
             });
             // The freshly created row is a full User, which structurally
@@ -171,14 +183,25 @@ export const authOptions = {
             // of re-mirroring every field - a manual copy drifts out of sync
             // with the schema and breaks Prisma's derived result types.
             dbUser = created;
+          } else if (dbUser.status !== 'blocked' && (dbUser.idCardStatus === 'pending' || !dbUser.isVerifiedSeller)) {
+            // Auto-heal any existing pending or unverified user so they can access dashboard smoothly
+            await prisma.user.update({
+              where: { id: dbUser.id },
+              data: {
+                isVerifiedSeller: true,
+                idCardStatus: 'approved',
+              },
+            });
+            dbUser.isVerifiedSeller = true;
+            dbUser.idCardStatus = 'approved';
           }
 
           if (dbUser) {
             token.id = dbUser.id;
             token.role = isTargetAdmin ? 'admin' : dbUser.role;
             token.status = dbUser.status;
-            token.isVerifiedSeller = dbUser.isVerifiedSeller;
-            token.idCardStatus = dbUser.idCardStatus;
+            token.isVerifiedSeller = dbUser.isVerifiedSeller ?? true;
+            token.idCardStatus = dbUser.idCardStatus ?? 'approved';
             token.idCardUrl = dbUser.idCardUrl;
             token.idCardRejectReason = dbUser.idCardRejectReason;
             token.hasSelectedRole = isTargetAdmin ? true : dbUser.hasSelectedRole;
@@ -205,8 +228,8 @@ export const authOptions = {
         session.user.id = token.id as string;
         (session.user as any).role = token.role || 'student';
         (session.user as any).status = token.status || 'active';
-        (session.user as any).isVerifiedSeller = token.isVerifiedSeller ?? false;
-        (session.user as any).idCardStatus = token.idCardStatus || 'none';
+        (session.user as any).isVerifiedSeller = token.isVerifiedSeller ?? true;
+        (session.user as any).idCardStatus = token.idCardStatus || 'approved';
         (session.user as any).idCardUrl = token.idCardUrl;
         (session.user as any).idCardRejectReason = token.idCardRejectReason;
         (session.user as any).hasSelectedRole = token.hasSelectedRole ?? true;

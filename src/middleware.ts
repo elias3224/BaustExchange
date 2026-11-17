@@ -96,6 +96,13 @@ export async function middleware(req: any) {
     return NextResponse.redirect(url);
   }
 
+  // 1.5. Bypass legacy verification page directly to dashboard
+  if (pathname === '/verify-id') {
+    const url = req.nextUrl.clone();
+    url.pathname = '/dashboard';
+    return NextResponse.redirect(url);
+  }
+
   // 2. Check if user needs one-time role selection
   const isSelectRolePage = pathname === '/select-role';
   const isAllowedPathBeforeRole =

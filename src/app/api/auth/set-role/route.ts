@@ -25,6 +25,9 @@ export async function POST(req: NextRequest) {
       data: {
         role: finalRole as any,
         hasSelectedRole: true,
+        isVerifiedSeller: true,
+        idCardStatus: 'approved',
+        status: 'active',
       },
       select: {
         id: true,
