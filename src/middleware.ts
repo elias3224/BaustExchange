@@ -13,6 +13,14 @@ const PUBLIC_PAGE = /^\/(login|auth\/logout|privacy|terms|privacy-policy|terms-o
 export async function middleware(req: any) {
   const { pathname } = req.nextUrl;
 
+  // 0. Completely bypass /verify-id to /dashboard for any visitor (authenticated or unauthenticated)
+  if (pathname === '/verify-id' || pathname.startsWith('/verify-id/')) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/dashboard';
+    url.search = '';
+    return NextResponse.redirect(url);
+  }
+
   if (PUBLIC_FILE.test(pathname) || PUBLIC_STATIC.test(pathname) || PUBLIC_PAGE.test(pathname)) {
     // If user is already authenticated and visits /login, redirect to appropriate dashboard
     if (pathname === '/login') {
@@ -28,7 +36,7 @@ export async function middleware(req: any) {
         const url = req.nextUrl.clone();
         if (token.role === 'admin') {
           url.pathname = '/admin';
-        } else if (token.hasSelectedRole === false) {
+        } else if (!token.hasSelectedRole) {
           url.pathname = '/select-role';
         } else {
           url.pathname = '/dashboard';
@@ -96,10 +104,11 @@ export async function middleware(req: any) {
     return NextResponse.redirect(url);
   }
 
-  // 1.5. Bypass legacy verification page directly to dashboard
-  if (pathname === '/verify-id') {
+  // 1.5. Bypass legacy verification page
+  if (pathname === '/verify-id' || pathname.startsWith('/verify-id/')) {
     const url = req.nextUrl.clone();
-    url.pathname = '/dashboard';
+    url.pathname = !token.hasSelectedRole ? '/select-role' : '/dashboard';
+    url.search = '';
     return NextResponse.redirect(url);
   }
 
@@ -110,7 +119,7 @@ export async function middleware(req: any) {
     pathname.startsWith('/api/auth') ||
     pathname === '/auth/logout';
 
-  if (token.hasSelectedRole === false && !isAllowedPathBeforeRole) {
+  if (!token.hasSelectedRole && !isAllowedPathBeforeRole) {
     const isApi = pathname.startsWith('/api/');
     if (isApi) {
       return NextResponse.json({ error: 'Role selection required' }, { status: 403 });
@@ -121,7 +130,7 @@ export async function middleware(req: any) {
   }
 
   // 3. If role is already selected and user visits /select-role, redirect away
-  if (token.hasSelectedRole === true && isSelectRolePage) {
+  if (Boolean(token.hasSelectedRole) && isSelectRolePage) {
     const url = req.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);

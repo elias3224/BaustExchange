@@ -73,7 +73,7 @@ export default function LandingPage() {
       const user = session?.user as any;
       if (user?.role === 'admin') {
         router.replace('/admin');
-      } else if (user?.hasSelectedRole === false) {
+      } else if (!user?.hasSelectedRole) {
         router.replace('/select-role');
       } else {
         router.replace('/dashboard');
