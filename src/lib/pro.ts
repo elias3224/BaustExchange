@@ -14,7 +14,23 @@ export function isUserPro(user?: {
   if (!user.subscriptionExpires) return false;
 
   const expiresAt = new Date(user.subscriptionExpires).getTime();
-  return expiresAt > Date.now();
+  return !isNaN(expiresAt) && expiresAt > Date.now();
+}
+
+/**
+ * Checks if a user has an active paid Campus PRO subscription.
+ * Strictly checks actual PRO plan and expiry without granting admin bypass.
+ */
+export function isActualProSubscription(user?: {
+  subscriptionPlan?: string | null;
+  subscriptionExpires?: Date | string | null;
+} | null): boolean {
+  if (!user) return false;
+  if (user.subscriptionPlan !== 'pro') return false;
+  if (!user.subscriptionExpires) return false;
+
+  const expiresAt = new Date(user.subscriptionExpires).getTime();
+  return !isNaN(expiresAt) && expiresAt > Date.now();
 }
 
 export type ProFeature =

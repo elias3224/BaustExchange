@@ -7,6 +7,7 @@ import { findMatchesForListing } from '@/lib/matching';
 import { ItemActions } from '@/components/listings/ItemActions';
 import { RoleBadge } from '@/components/ui/SessionContext';
 import { ProAvatar } from '@/components/ui/ProAvatar';
+import { isActualProSubscription } from '@/lib/pro';
 import {
   CONDITION_LABELS,
   STATUS_LABELS,
@@ -148,7 +149,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
               <ProAvatar
                 src={listing.user.image}
                 name={listing.user.name}
-                isPro={listing.user.subscriptionPlan === 'pro' || listing.user.isVerifiedSeller}
+                isPro={isActualProSubscription(listing.user)}
                 size="md"
               />
               <div>

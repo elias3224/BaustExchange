@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatPrice, timeAgo } from '@/lib/utils';
 import { ProAvatar } from '@/components/ui/ProAvatar';
+import { isActualProSubscription } from '@/lib/pro';
 import {
   CreditCard,
   IdCard,
@@ -563,7 +564,7 @@ export function AdminDashboardClient({
                               <ProAvatar
                                 src={u.image}
                                 name={u.name}
-                                isPro={u.subscriptionPlan === 'pro' || u.isVerifiedSeller}
+                                isPro={isActualProSubscription(u)}
                                 size="sm"
                               />
                               <div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { isUserPro } from '@/lib/pro';
+import { isActualProSubscription } from '@/lib/pro';
 
 export interface ProAvatarProps {
   user?: {
@@ -38,7 +38,7 @@ export function ProAvatar({
   showBadge = true,
   className = '',
 }: ProAvatarProps) {
-  const effectiveIsPro = isPro !== undefined ? isPro : isUserPro(user);
+  const effectiveIsPro = isPro !== undefined ? isPro : isActualProSubscription(user);
   const effectiveImage = src !== undefined ? src : user?.image;
   const effectiveName = name !== undefined ? name : user?.name;
 

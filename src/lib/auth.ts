@@ -161,6 +161,8 @@ export const authOptions = {
               phone: true,
               name: true,
               image: true,
+              subscriptionPlan: true,
+              subscriptionExpires: true,
             },
           });
 
@@ -208,6 +210,8 @@ export const authOptions = {
             token.department = dbUser.department;
             token.studentId = dbUser.studentId;
             token.phone = dbUser.phone;
+            token.subscriptionPlan = dbUser.subscriptionPlan || null;
+            token.subscriptionExpires = dbUser.subscriptionExpires ? new Date(dbUser.subscriptionExpires).toISOString() : null;
             if (dbUser.name) token.name = dbUser.name;
             if (dbUser.image) token.picture = dbUser.image;
           }
@@ -236,6 +240,8 @@ export const authOptions = {
         (session.user as any).department = token.department;
         (session.user as any).studentId = token.studentId;
         (session.user as any).phone = token.phone;
+        (session.user as any).subscriptionPlan = token.subscriptionPlan || null;
+        (session.user as any).subscriptionExpires = token.subscriptionExpires || null;
       }
       return session;
     },

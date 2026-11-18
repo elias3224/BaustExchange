@@ -3,6 +3,7 @@ import { RoleBadge } from '@/components/ui/SessionContext';
 import { CONDITION_LABELS, TRANSACTION_LABELS, formatPrice } from '@/lib/utils';
 import { FavoriteButton } from '@/components/marketplace/FavoriteButton';
 import { ProAvatar } from '@/components/ui/ProAvatar';
+import { isActualProSubscription } from '@/lib/pro';
 
 export interface ListingCardProps {
   listing: {
@@ -106,7 +107,7 @@ export function ListingCard({ listing }: ListingCardProps) {
             <ProAvatar
               src={listing.user.image}
               name={listing.user.name}
-              isPro={listing.user.subscriptionPlan === 'pro' || listing.user.isVerifiedSeller}
+              isPro={isActualProSubscription(listing.user)}
               size="sm"
             />
             <span className="text-xs text-gray-600 truncate">{listing.user.name}</span>

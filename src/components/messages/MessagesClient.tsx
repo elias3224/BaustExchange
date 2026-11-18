@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Alert } from '@/components/ui/Alert';
 import { timeAgo } from '@/lib/utils';
 import { ProAvatar } from '@/components/ui/ProAvatar';
+import { isActualProSubscription } from '@/lib/pro';
 import { CallModal } from './CallModal';
 import {
   Send,
@@ -545,7 +546,7 @@ export function MessagesClient({
                 <ProAvatar
                   src={c.partner.image}
                   name={c.partner.name}
-                  isPro={c.partner.subscriptionPlan === 'pro' || c.partner.isVerifiedSeller}
+                  isPro={isActualProSubscription(c.partner)}
                   size="md"
                 />
                 <div className="min-w-0 flex-1">
@@ -583,7 +584,7 @@ export function MessagesClient({
                     <ProAvatar
                       src={partnerInfo?.image}
                       name={partnerInfo?.name}
-                      isPro={partnerInfo?.subscriptionPlan === 'pro' || partnerInfo?.isVerifiedSeller}
+                      isPro={isActualProSubscription(partnerInfo)}
                       size="sm"
                     />
                     <div className="min-w-0">

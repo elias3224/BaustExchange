@@ -11,6 +11,8 @@ type SessionContextType = {
     role?: string;
     status?: string;
     department?: string | null;
+    subscriptionPlan?: string | null;
+    subscriptionExpires?: Date | string | null;
   };
 };
 

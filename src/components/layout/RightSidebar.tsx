@@ -89,15 +89,6 @@ export function RightSidebar() {
         </button>
 
         <div className="space-y-4 flex flex-col items-center">
-          <Link href="/profile" title="View Profile">
-            {user?.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.image} alt={user.name} className="w-8 h-8 rounded-full object-cover border border-gray-200" />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-gray-200" />
-            )}
-          </Link>
-
           <Link href="/post-item" title="Post Item" className="p-2 rounded-md text-gray-600 hover:bg-brand-50 hover:text-brand-600">
             <Package className="w-4 h-4" />
           </Link>
@@ -136,12 +127,6 @@ export function RightSidebar() {
           </div>
 
           <div className="flex items-center gap-3">
-            {user?.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.image} alt={user.name} className="w-11 h-11 rounded-full object-cover border border-gray-200 shrink-0" />
-            ) : (
-              <div className="w-11 h-11 rounded-full bg-gray-200 shrink-0" />
-            )}
             <div className="min-w-0 flex-1">
               <div className="font-semibold text-gray-900 truncate">{user?.name || 'User'}</div>
               <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
