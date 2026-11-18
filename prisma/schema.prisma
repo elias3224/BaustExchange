@@ -171,6 +171,7 @@ model Listing {
   requests ExchangeRequest[]
   messages Message[]
   reports  Report[]
+  wantedItems WantedItem[]
 
   @@index([status, createdAt])
   @@index([isFeatured, createdAt])
@@ -225,6 +226,7 @@ model WantedItem {
   id          String     @id @default(cuid())
   userId      String
   categoryId  String
+  listingId   String?
   title       String
   description String?
   budget      Float?
@@ -232,11 +234,13 @@ model WantedItem {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user     User    @relation(fields: [userId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
   category Category @relation(fields: [categoryId], references: [id])
+  listing  Listing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([categoryId])
+  @@index([listingId])
 }
 
 /**

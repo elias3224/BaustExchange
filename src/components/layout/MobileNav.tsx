@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -53,6 +54,36 @@ const CATEGORY_ITEMS = [
 export function MobileNav({ onClose }: MobileNavProps) {
   const user = useSessionUser();
   const pathname = usePathname();
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch('/api/messages/unread-count', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data.unreadCount === 'number') {
+            setUnreadCount(data.unreadCount);
+          }
+        }
+      } catch {}
+    };
+
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const handleCountSync = (e: Event) => {
+      const customEvent = e as CustomEvent<{ count: number }>;
+      if (typeof customEvent.detail?.count === 'number') {
+        setUnreadCount(customEvent.detail.count);
+      }
+    };
+    window.addEventListener('baust:unread-messages-count', handleCountSync);
+    return () => window.removeEventListener('baust:unread-messages-count', handleCountSync);
+  }, []);
 
   return (
     <div className="flex flex-col h-full bg-white select-none py-3 px-3 space-y-5 overflow-y-auto">
@@ -74,6 +105,7 @@ export function MobileNav({ onClose }: MobileNavProps) {
         <div className="space-y-1">
           {NAV.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/' && item.href !== '/dashboard' && pathname?.startsWith(item.href));
+            const isMessages = item.href === '/messages';
             return (
               <Link
                 key={item.href}
@@ -86,7 +118,12 @@ export function MobileNav({ onClose }: MobileNavProps) {
                 }`}
               >
                 <item.icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-brand-600' : 'text-gray-500'}`} />
-                <span className="truncate">{item.label}</span>
+                <span className="truncate flex-1">{item.label}</span>
+                {isMessages && unreadCount > 0 && (
+                  <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-600 rounded-full min-w-[18px] h-[18px] shadow-xs">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </Link>
             );
           })}

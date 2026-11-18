@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { formatPrice, timeAgo } from '@/lib/utils';
-import { Edit, Trash2, Check, X } from 'lucide-react';
+import { Edit, Trash2, Check, X, ExternalLink } from 'lucide-react';
 
 export function MyWantedItem({ item, categories = [] }: { item: any; categories?: { id: string; name: string }[] }) {
   const router = useRouter();
@@ -60,7 +61,16 @@ export function MyWantedItem({ item, categories = [] }: { item: any; categories?
     if (!confirm('Delete this wanted item?')) return;
     setBusy(true);
     try {
-      await fetch(`/api/wanted/${item.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/wanted/${item.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        if (item.listingId) {
+          window.dispatchEvent(
+            new CustomEvent('baust:favorite-change', {
+              detail: { listingId: item.listingId, favorited: false },
+            })
+          );
+        }
+      }
       router.refresh();
     } finally {
       setBusy(false);
@@ -145,6 +155,20 @@ export function MyWantedItem({ item, categories = [] }: { item: any; categories?
       {item.description && <p className="text-xs text-gray-600 mt-2">{item.description}</p>}
       {item.budget != null && (
         <div className="text-xs text-green-700 mt-1 font-medium">Budget: {formatPrice(item.budget)}</div>
+      )}
+      {item.listingId && (
+        <div className="mt-2.5 flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-red-600 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full">
+            ❤️ Favorited Product
+          </span>
+          <Link
+            href={`/item/${item.listingId}`}
+            className="inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 hover:underline font-medium"
+          >
+            <span>View Product</span>
+            <ExternalLink className="w-3 h-3" />
+          </Link>
+        </div>
       )}
       <div className="flex flex-wrap gap-2 mt-3 pt-2 border-t border-gray-100">
         <button

@@ -109,6 +109,16 @@ export function MessagesClient({
           const data = await res.json();
           if (data.messages) {
             setAllMessages(data.messages);
+
+            // Compute total unread for current user and dispatch sync event
+            const unreadTotal = data.messages.filter(
+              (m: Msg) => m.receiverId === currentUserId && !m.isRead
+            ).length;
+            window.dispatchEvent(
+              new CustomEvent('baust:unread-messages-count', {
+                detail: { count: unreadTotal },
+              })
+            );
           }
         }
       } catch (err) {
@@ -119,6 +129,44 @@ export function MessagesClient({
     const interval = setInterval(fetchLatestMessages, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  // Mark incoming messages from activePartner as read when viewing conversation
+  useEffect(() => {
+    if (!activePartner) return;
+
+    const hasUnread = allMessages.some(
+      (m) => m.senderId === activePartner && m.receiverId === currentUserId && !m.isRead
+    );
+
+    if (hasUnread) {
+      // Optimistically mark messages as read locally
+      setAllMessages((prev) =>
+        prev.map((m) =>
+          m.senderId === activePartner && m.receiverId === currentUserId
+            ? { ...m, isRead: true }
+            : m
+        )
+      );
+
+      // Call API to mark as read on server and update unread count
+      fetch('/api/messages/read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ partnerId: activePartner }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && typeof data.unreadCount === 'number') {
+            window.dispatchEvent(
+              new CustomEvent('baust:unread-messages-count', {
+                detail: { count: data.unreadCount },
+              })
+            );
+          }
+        })
+        .catch((err) => console.error('Error marking messages as read:', err));
+    }
+  }, [activePartner, allMessages, currentUserId]);
 
   // Poll typing status of active partner every 2 seconds
   useEffect(() => {

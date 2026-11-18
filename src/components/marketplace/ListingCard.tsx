@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { RoleBadge } from '@/components/ui/SessionContext';
 import { CONDITION_LABELS, TRANSACTION_LABELS, formatPrice } from '@/lib/utils';
+import { FavoriteButton } from '@/components/marketplace/FavoriteButton';
 
 export interface ListingCardProps {
   listing: {
@@ -63,6 +64,12 @@ export function ListingCard({ listing }: ListingCardProps) {
         >
           {TRANSACTION_LABELS[listing.transactionType] || listing.transactionType}
         </span>
+        <div className="absolute bottom-2 right-2 z-10">
+          <FavoriteButton
+            listingId={listing.id}
+            className="p-1.5 bg-white/90 hover:bg-white shadow-sm hover:shadow"
+          />
+        </div>
       </div>
 
       <div className="p-3 space-y-1">

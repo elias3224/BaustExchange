@@ -53,7 +53,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 
     await prisma.wantedItem.delete({ where: { id } });
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, listingId: item.listingId });
   } catch (err) {
     console.error('DELETE /api/wanted/[id] error:', err);
     return NextResponse.json({ error: 'Something went wrong.' }, { status: 500 });

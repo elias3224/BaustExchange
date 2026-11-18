@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Alert } from '@/components/ui/Alert';
 import { REPORT_REASONS } from '@/lib/utils';
 import { Heart, Edit } from 'lucide-react';
+import { useFavorites } from '@/components/marketplace/FavoritesContext';
 
 export function ItemActions({
   listingId,
@@ -27,34 +28,23 @@ export function ItemActions({
   const [success, setSuccess] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // Favorite / Save feature
-  const [isSaved, setIsSaved] = useState(false);
+  // Automatic Favorite -> Wanted Items feature
+  const { isFavorited, toggleFavorite } = useFavorites();
+  const isSaved = isFavorited(listingId);
 
-  useEffect(() => {
+  async function toggleSave() {
+    setError('');
+    setSuccess('');
     try {
-      const saved = JSON.parse(localStorage.getItem('saved_listings') || '[]');
-      setIsSaved(saved.includes(listingId));
+      const willBeSaved = !isSaved;
+      await toggleFavorite(listingId);
+      setSuccess(
+        willBeSaved
+          ? 'Product automatically added to your Wanted Items!'
+          : 'Product removed from your Wanted Items.'
+      );
     } catch {
-      setIsSaved(false);
-    }
-  }, [listingId]);
-
-  function toggleSave() {
-    try {
-      const saved: string[] = JSON.parse(localStorage.getItem('saved_listings') || '[]');
-      let updated: string[];
-      if (saved.includes(listingId)) {
-        updated = saved.filter((id) => id !== listingId);
-        setIsSaved(false);
-        setSuccess('Item removed from saved favorites.');
-      } else {
-        updated = [...saved, listingId];
-        setIsSaved(true);
-        setSuccess('Item saved to your favorites!');
-      }
-      localStorage.setItem('saved_listings', JSON.stringify(updated));
-    } catch {
-      // fallback
+      setError('Failed to update favorite status.');
     }
   }
 
@@ -218,13 +208,15 @@ export function ItemActions({
         )}
 
         <button
+          type="button"
           onClick={toggleSave}
-          title={isSaved ? 'Unsave item' : 'Save item'}
+          title={isSaved ? 'Remove from Wanted Items' : 'Add to Wanted Items'}
+          aria-label={isSaved ? 'Remove from Wanted Items' : 'Add to Wanted Items'}
           className={`p-2.5 border rounded-md transition-colors flex items-center justify-center ${
             isSaved ? 'border-red-300 bg-red-50 text-red-600' : 'border-gray-300 hover:bg-gray-100 text-gray-600'
           }`}
         >
-          <Heart className={`w-5 h-5 ${isSaved ? 'fill-red-600' : ''}`} />
+          <Heart className={`w-5 h-5 ${isSaved ? 'fill-red-600 text-red-600' : ''}`} />
         </button>
       </div>
 
