@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 // Paths that do NOT require authentication (includes SSLCommerz callbacks & IPN).
-const PUBLIC_FILE = /^\/(?:_next\/|api\/auth\/|api\/(?:session|upload|health|activities|payments\/sslcommerz)|favicon\.ico|robots\.txt|images\/|uploads\/).*/;
+const PUBLIC_FILE = /^\/(?:_next\/|api\/auth\/|api\/(?:session|upload|health|activities|payments\/sslcommerz)|favicon.*|apple-touch-icon.*|robots\.txt|images\/|uploads\/).*/;
 
 // Root-level static assets (images, etc.) are public too.
 const PUBLIC_STATIC = /^\/[^/]+\.(?:jpe?g|png|gif|webp|svg|avif|ico|pdf|txt)$/;
@@ -140,5 +140,5 @@ export async function middleware(req: any) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|uploads).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.*|apple-touch-icon.*|uploads).*)'],
 };
