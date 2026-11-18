@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
       });
 
       if (payment.type === 'pro_subscription') {
+        const now = new Date();
         const expires = new Date();
         expires.setDate(expires.getDate() + 30);
         await prisma.user.update({
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
           data: {
             subscriptionPlan: 'pro',
             isVerifiedSeller: true,
+            subscriptionStartedAt: now,
             subscriptionExpires: expires,
           },
         });

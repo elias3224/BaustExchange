@@ -23,7 +23,7 @@ import { logActivity, ActivityType } from '@/lib/activity';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
 const MAX_SIZE = 3 * 1024 * 1024; // 3 MB
 const OCR_TIMEOUT_MS = 60_000;
 
@@ -102,39 +102,60 @@ export async function POST(req: NextRequest) {
     //    Access (isVerifiedSeller) is ONLY granted by an admin action, so a
     //    weak-OCR submission can never self-verify.
     let check: ReturnType<typeof idCardCheckFromText> | null = null;
-    let ocrFailed = false;
-    try {
-      const preprocessed = await sharp(buffer)
-        .grayscale()
-        .resize({ width: 1600, withoutEnlargement: false })
-        .normalise()
-        .toBuffer();
-      const text = await ocrBuffer(preprocessed);
-      check = idCardCheckFromText(text, roleChecked);
-    } catch (err) {
-      console.warn('Server OCR failed:', err);
-      ocrFailed = true;
+    let ocrNote = 'PDF Document submitted for manual Admin review';
+
+    if (file.type !== 'application/pdf') {
+      try {
+        const preprocessed = await sharp(buffer)
+          .grayscale()
+          .resize({ width: 1600, withoutEnlargement: false })
+          .normalise()
+          .toBuffer();
+        const text = await ocrBuffer(preprocessed);
+        check = idCardCheckFromText(text, roleChecked);
+        ocrNote = check?.verified
+          ? `OCR PASS — matched: ${(check.matched ?? []).join(', ')}`
+          : 'OCR UNCLEAR — manual review required';
+      } catch (err) {
+        console.warn('Server OCR failed:', err);
+        ocrNote = 'OCR FAILED — manual review required';
+      }
     }
 
-    const ocrNote = check?.verified
-      ? `OCR PASS — matched: ${(check.matched ?? []).join(', ')}`
-      : ocrFailed
-        ? 'OCR FAILED — manual review required'
-        : 'OCR UNCLEAR — manual review required';
+    const studentIdInput = (formData.get('studentId') as string) || undefined;
+    const departmentInput = (formData.get('department') as string) || undefined;
 
-    // 3. Mark as approved — immediate verification, no pending admin approval queue required
+    // 3. Set status to pending for Admin review
     await prisma.user.update({
       where: { id: user.id },
       data: {
         idCardUrl: url,
-        idCardStatus: 'approved',
-        isVerifiedSeller: true,
+        idCardStatus: 'pending',
+        isVerifiedSeller: false,
         idCardOcrNote: ocrNote,
         idCardRejectReason: null,
         role: roleChecked,
         hasSelectedRole: true,
+        ...(studentIdInput ? { studentId: studentIdInput } : {}),
+        ...(departmentInput ? { department: departmentInput } : {}),
       },
     });
+
+    // Notify all admins about new verification request
+    const admins = await prisma.user.findMany({
+      where: { role: 'admin' },
+      select: { id: true },
+    });
+    for (const a of admins) {
+      await prisma.notification.create({
+        data: {
+          userId: a.id,
+          type: 'ADMIN',
+          message: `📋 New BAUST ID verification submitted by ${user.name || user.email} for review.`,
+          referenceId: user.id,
+        },
+      });
+    }
 
     await logActivity(
       ActivityType.LISTING_UPDATED,

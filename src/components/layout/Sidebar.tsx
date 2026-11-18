@@ -22,6 +22,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useSessionUser } from '@/components/ui/SessionContext';
+import { LogoutModal } from './LogoutModal';
 
 const NAV = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -55,6 +56,7 @@ export function Sidebar() {
 
   // Left sidebar collapse/expand state
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Unread messages count state
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -159,6 +161,30 @@ export function Sidebar() {
                 pathname === item.href ||
                 (item.href !== '/' && item.href !== '/dashboard' && pathname?.startsWith(item.href));
               const isMessages = item.href === '/messages';
+
+              if (item.label === 'Logout') {
+                return isCollapsed ? (
+                  <button
+                    key={item.href}
+                    type="button"
+                    onClick={() => setShowLogoutModal(true)}
+                    title="Logout"
+                    className="relative flex items-center justify-center p-2 rounded-md transition-colors text-red-600 hover:bg-red-50 w-full"
+                  >
+                    <item.icon className="w-4 h-4 shrink-0 text-red-600" />
+                  </button>
+                ) : (
+                  <button
+                    key={item.href}
+                    type="button"
+                    onClick={() => setShowLogoutModal(true)}
+                    className="flex items-center gap-2.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors text-red-600 hover:bg-red-50 w-full text-left"
+                  >
+                    <item.icon className="w-4 h-4 shrink-0 text-red-600" />
+                    <span className="truncate flex-1">Logout</span>
+                  </button>
+                );
+              }
 
               if (isCollapsed) {
                 return (
@@ -310,6 +336,8 @@ export function Sidebar() {
           </div>
         )}
       </nav>
+
+      <LogoutModal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} />
     </aside>
   );
 }

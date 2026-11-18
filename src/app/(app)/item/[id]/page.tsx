@@ -6,6 +6,7 @@ import { currentUser } from '@/lib/authz';
 import { findMatchesForListing } from '@/lib/matching';
 import { ItemActions } from '@/components/listings/ItemActions';
 import { RoleBadge } from '@/components/ui/SessionContext';
+import { ProAvatar } from '@/components/ui/ProAvatar';
 import {
   CONDITION_LABELS,
   STATUS_LABELS,
@@ -13,7 +14,7 @@ import {
   formatPrice,
   timeAgo,
 } from '@/lib/utils';
-import { MapPin, Phone, Eye } from 'lucide-react';
+import { MapPin, Phone, Eye, Hash } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,12 +23,25 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
   const user = await currentUser();
   if (!user) return null;
 
-  const listing = await prisma.listing.findUnique({
-    where: { id },
+  const listing = await prisma.listing.findFirst({
+    where: { OR: [{ id }, { customId: id }] },
     include: {
       images: { orderBy: { order: 'asc' } },
       category: true,
-      user: { select: { id: true, name: true, image: true, role: true, department: true, studentId: true, phone: true, createdAt: true } },
+      user: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          role: true,
+          department: true,
+          studentId: true,
+          phone: true,
+          createdAt: true,
+          isVerifiedSeller: true,
+          subscriptionPlan: true,
+        },
+      },
     },
   });
   if (!listing) notFound();
@@ -75,11 +89,16 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
 
         {/* Details */}
         <div className="space-y-4">
-          <div className="flex items-start justify-between gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 min-w-0 break-words">{listing.title}</h1>
-            <span className={`text-xs px-2 py-0.5 rounded whitespace-nowrap mt-1 shrink-0 ${listing.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-              {STATUS_LABELS[listing.status] || listing.status}
-            </span>
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 text-gray-700 font-mono text-xs font-semibold mb-2">
+              <Hash className="w-3.5 h-3.5 text-brand-600" /> Listing ID: {listing.customId || listing.id}
+            </div>
+            <div className="flex items-start justify-between gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 min-w-0 break-words">{listing.title}</h1>
+              <span className={`text-xs px-2 py-0.5 rounded whitespace-nowrap mt-1 shrink-0 ${listing.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                {STATUS_LABELS[listing.status] || listing.status}
+              </span>
+            </div>
           </div>
 
           <div className="text-xl sm:text-2xl font-bold text-brand-700">
@@ -126,15 +145,20 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
           {/* Seller card */}
           <div className="border border-gray-200 rounded-md p-4 bg-gray-50">
             <div className="flex items-center gap-3">
-              {listing.user.image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={listing.user.image} alt={listing.user.name ?? ''} className="w-10 h-10 rounded-full object-cover" />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-gray-200" />
-              )}
+              <ProAvatar
+                src={listing.user.image}
+                name={listing.user.name}
+                isPro={listing.user.subscriptionPlan === 'pro' || listing.user.isVerifiedSeller}
+                size="md"
+              />
               <div>
                 <div className="text-sm font-medium flex items-center gap-2">
                   {listing.user.name} <RoleBadge role={listing.user.role} />
+                  {listing.user.isVerifiedSeller && (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                      ✓ Verified Seller
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-gray-500">
                   {listing.user.department ? `${listing.user.department} • ` : ''}Member since {timeAgo(listing.user.createdAt)}

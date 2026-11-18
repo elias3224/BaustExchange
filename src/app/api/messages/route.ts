@@ -6,6 +6,7 @@ import { rateLimit, clientIp } from '@/lib/ratelimit';
 import { createNotification } from '@/lib/notifications';
 import { sendEmail } from '@/lib/mailer';
 import { NotificationType } from '@prisma/client';
+import { checkProEntitlement } from '@/lib/pro';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { receiverId, listingId, message } = body;
+    const { receiverId, listingId, message, latitude, longitude, locationName } = body;
     if (!receiverId || !message) return NextResponse.json({ error: 'Receiver and message are required.' }, { status: 400 });
 
     // Don't allow messaging blocked users.
@@ -69,8 +70,56 @@ export async function POST(req: NextRequest) {
     if (!receiver) return NextResponse.json({ error: 'Recipient not found.' }, { status: 404 });
     if (receiver.status === 'blocked') return NextResponse.json({ error: 'Cannot message this user.' }, { status: 400 });
 
+    // GPS location validation (PRO check)
+    if (latitude != null && longitude != null) {
+      const entitlement = await checkProEntitlement(user.id, 'gps_location');
+      if (!entitlement.allowed) {
+        return NextResponse.json(
+          { error: 'Live GPS Location sharing is a Campus PRO feature.' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Check message request state
+    const existingReq = await prisma.messageRequest.findFirst({
+      where: {
+        OR: [
+          { senderId: user.id, receiverId },
+          { senderId: receiverId, receiverId: user.id },
+        ],
+      },
+    });
+
+    if (existingReq) {
+      if (existingReq.status === 'rejected' && existingReq.receiverId === user.id) {
+        return NextResponse.json({ error: 'You have rejected this conversation.' }, { status: 403 });
+      }
+      if (existingReq.status === 'rejected' && existingReq.senderId === user.id) {
+        return NextResponse.json({ error: 'Recipient has declined message requests.' }, { status: 403 });
+      }
+    } else {
+      // First time messaging: create pending request
+      await prisma.messageRequest.create({
+        data: {
+          senderId: user.id,
+          receiverId,
+          status: 'pending',
+        },
+      });
+    }
+
     const msg = await prisma.message.create({
-      data: { senderId: user.id, receiverId, listingId: listingId || null, message, isRead: false },
+      data: {
+        senderId: user.id,
+        receiverId,
+        listingId: listingId || null,
+        message,
+        latitude: latitude != null ? Number(latitude) : null,
+        longitude: longitude != null ? Number(longitude) : null,
+        locationName: locationName || null,
+        isRead: false,
+      },
     });
 
     await createNotification(receiverId, NotificationType.MESSAGE, `${user.name || 'Someone'} sent you a message.`, msg.id);

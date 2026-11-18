@@ -29,6 +29,12 @@ export async function GET() {
       department: true,
       studentId: true,
       phone: true,
+      batch: true,
+      bio: true,
+      subscriptionPlan: true,
+      subscriptionExpires: true,
+      isSuperAdmin: true,
+      idCardStatus: true,
       createdAt: true,
     },
   });
@@ -53,29 +59,29 @@ export async function PATCH(req: NextRequest) {
     }
 
     const data = parsed.data;
-    const isTargetAdmin = user.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
-    
-    // Prevent normal users from changing role to admin
-    let roleToSave: string | undefined = undefined;
-    if (isTargetAdmin || user.role === 'admin') {
-      roleToSave = 'admin';
-    } else if (data.role === 'student' || data.role === 'teacher') {
-      roleToSave = data.role;
-    }
-
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
+        ...(data.name ? { name: data.name } : {}),
         department: data.department || null,
         studentId: data.studentId || null,
         phone: data.phone || null,
+        batch: data.batch || null,
+        bio: data.bio || null,
         ...(data.image ? { image: data.image } : {}),
-        ...(roleToSave ? { role: roleToSave as any, hasSelectedRole: true } : {}),
-        // NOTE: isVerifiedSeller can no longer be set from here. ID card
-        // verification goes through POST /api/profile/verify-id (server OCR)
-        // and is granted by an admin via /api/admin/users/[id].
       },
-      select: { id: true, department: true, studentId: true, phone: true, image: true, role: true, isVerifiedSeller: true, hasSelectedRole: true },
+      select: {
+        id: true,
+        name: true,
+        department: true,
+        studentId: true,
+        phone: true,
+        batch: true,
+        bio: true,
+        image: true,
+        role: true,
+        isVerifiedSeller: true,
+      },
     });
 
     await logActivity(ActivityType.LISTING_UPDATED, 'Updated profile', user.id, ip);

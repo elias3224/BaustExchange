@@ -2,10 +2,12 @@ import Link from 'next/link';
 import { RoleBadge } from '@/components/ui/SessionContext';
 import { CONDITION_LABELS, TRANSACTION_LABELS, formatPrice } from '@/lib/utils';
 import { FavoriteButton } from '@/components/marketplace/FavoriteButton';
+import { ProAvatar } from '@/components/ui/ProAvatar';
 
 export interface ListingCardProps {
   listing: {
     id: string;
+    customId?: string | null;
     title: string;
     description: string;
     condition: string;
@@ -23,6 +25,7 @@ export interface ListingCardProps {
       role: string;
       department: string | null;
       isVerifiedSeller?: boolean;
+      subscriptionPlan?: string | null;
     } | null;
     images: { id: string; url: string }[];
   };
@@ -73,8 +76,13 @@ export function ListingCard({ listing }: ListingCardProps) {
       </div>
 
       <div className="p-3 space-y-1">
+        <div className="flex items-center justify-between gap-1">
+          <span className="text-[10px] font-mono font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+            ID: {listing.customId || listing.id.slice(0, 8)}
+          </span>
+          <span className="text-xs text-gray-400 truncate">{listing.category?.name ?? 'Uncategorized'}</span>
+        </div>
         <h3 className="font-medium text-sm text-gray-800 line-clamp-1">{listing.title}</h3>
-        <div className="text-xs text-gray-500">{listing.category?.name ?? 'Uncategorized'}</div>
         <div className="text-xs text-gray-500">Condition: {CONDITION_LABELS[listing.condition] || listing.condition}</div>
         
         <div className="flex items-center justify-between pt-0.5">
@@ -95,12 +103,12 @@ export function ListingCard({ listing }: ListingCardProps) {
 
         {listing.user && (
           <div className="flex items-center gap-1.5 mt-1 pt-1 border-t border-gray-100">
-            {listing.user.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={listing.user.image} alt={listing.user.name ?? ''} loading="lazy" decoding="async" className="w-5 h-5 rounded-full object-cover" />
-            ) : (
-              <div className="w-5 h-5 rounded-full bg-gray-200" />
-            )}
+            <ProAvatar
+              src={listing.user.image}
+              name={listing.user.name}
+              isPro={listing.user.subscriptionPlan === 'pro' || listing.user.isVerifiedSeller}
+              size="sm"
+            />
             <span className="text-xs text-gray-600 truncate">{listing.user.name}</span>
             <RoleBadge role={listing.user.role} />
             {listing.user.isVerifiedSeller && (

@@ -26,12 +26,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Listing ID is required for pinning an item.' }, { status: 400 });
     }
 
+    let resolvedListingId: string | null = null;
     // Verify listing exists if type is item_pin
     if (type === 'item_pin' && listingId) {
-      const listing = await prisma.listing.findUnique({ where: { id: listingId } });
+      const listing = await prisma.listing.findFirst({
+        where: {
+          OR: [{ id: listingId.trim() }, { customId: listingId.trim() }],
+        },
+      });
       if (!listing) {
         return NextResponse.json({ error: 'Specified listing was not found.' }, { status: 404 });
       }
+      resolvedListingId = listing.id;
     }
 
     const amount = type === 'pro_subscription' ? 49 : 20;
@@ -56,7 +62,7 @@ export async function POST(req: NextRequest) {
       data: {
         userId: user.id,
         type,
-        listingId: listingId || null,
+        listingId: resolvedListingId || null,
         amount,
         paymentMethod: 'SSLCommerz',
         trxId: tranId,

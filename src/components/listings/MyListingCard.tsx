@@ -75,6 +75,14 @@ export function MyListingCard({ listing }: { listing: any }) {
             <Link href={`/item/${listing.id}`} className="font-medium text-sm text-gray-800 line-clamp-1 hover:underline">
               {listing.title}
             </Link>
+            <div>
+              <div className="text-[10px] font-mono font-semibold text-gray-500 mb-0.5">
+                ID: {listing.customId || listing.id.slice(0, 8)}
+              </div>
+              <Link href={`/item/${listing.id}`} className="font-medium text-sm text-gray-800 line-clamp-1 hover:underline">
+                {listing.title}
+              </Link>
+            </div>
             <span className={`text-xs px-2 py-0.5 rounded whitespace-nowrap ${statusColor[listing.status] || 'bg-gray-100'}`}>
               {STATUS_LABELS[listing.status] || listing.status}
             </span>

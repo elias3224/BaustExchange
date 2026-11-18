@@ -86,6 +86,7 @@ async function handleCallback(req: NextRequest) {
 
       // 2. Activate subscription or pin
       if (payment.type === 'pro_subscription') {
+        const now = new Date();
         const expires = new Date();
         expires.setDate(expires.getDate() + 30);
         await prisma.user.update({
@@ -93,6 +94,7 @@ async function handleCallback(req: NextRequest) {
           data: {
             subscriptionPlan: 'pro',
             isVerifiedSeller: true,
+            subscriptionStartedAt: now,
             subscriptionExpires: expires,
           },
         });

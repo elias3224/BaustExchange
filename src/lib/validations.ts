@@ -45,13 +45,13 @@ export const createRequestSchema = z.object({
 });
 
 export const updateProfileSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').max(80).optional(),
   department: z.string().max(80).nullable().optional().or(z.literal('')),
   studentId: z.string().max(40).nullable().optional().or(z.literal('')),
   phone: z.string().max(30).nullable().optional().or(z.literal('')),
+  batch: z.string().max(40).nullable().optional().or(z.literal('')),
+  bio: z.string().max(500).nullable().optional().or(z.literal('')),
   image: z.string().url('Invalid url').nullable().optional().or(z.literal('')),
-  role: z.enum(['student', 'teacher']).optional(),
-  // NOTE: isVerifiedSeller is intentionally NOT accepted from clients.
-  // Verification is granted only by an admin via /api/admin/users/[id].
 });
 
 export const createReportSchema = z.object({

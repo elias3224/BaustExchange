@@ -5,6 +5,8 @@ import prisma from '@/lib/prisma';
 import { requireAdmin } from '@/lib/authz';
 import { logActivity, ActivityType } from '@/lib/activity';
 import { ReportStatus } from '@prisma/client';
+import { logAdminAction } from '@/lib/audit';
+import { clientIp } from '@/lib/ratelimit';
 
 const STATUSES: ReportStatus[] = ['reviewed', 'resolved', 'dismissed'];
 
@@ -30,6 +32,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const updated = await prisma.report.update({ where: { id }, data: { status } });
 
     await logActivity(ActivityType.ADMIN_ROLE, `Report ${id} marked ${status}`, admin.id);
+
+    const ip = clientIp(req);
+    const userAgent = req.headers.get('user-agent');
+    await logAdminAction({
+      adminId: admin.id,
+      adminName: admin.name || 'Admin',
+      adminEmail: admin.email || 'admin@baust.edu',
+      actionType: 'report_resolved',
+      targetUserId: report.reportedUserId || report.reporterId,
+      previousValue: report.status,
+      newValue: status,
+      reason: body.reason || `Report for ${report.reason} marked ${status}`,
+      ipAddress: ip,
+      userAgent,
+    });
+
     return NextResponse.json(updated);
   } catch (err) {
     console.error('PATCH /api/admin/reports/[id] error:', err);

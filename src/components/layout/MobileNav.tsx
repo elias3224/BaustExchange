@@ -21,6 +21,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useSessionUser } from '@/components/ui/SessionContext';
+import { LogoutModal } from './LogoutModal';
 
 interface MobileNavProps {
   onClose?: () => void;
@@ -55,6 +56,7 @@ export function MobileNav({ onClose }: MobileNavProps) {
   const user = useSessionUser();
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     const fetchUnread = async () => {
@@ -176,10 +178,7 @@ export function MobileNav({ onClose }: MobileNavProps) {
       {/* Logout & Footer Links */}
       <div className="pt-3 border-t border-gray-100 space-y-3">
         <button
-          onClick={() => {
-            if (onClose) onClose();
-            signOut({ callbackUrl: '/' });
-          }}
+          onClick={() => setShowLogoutModal(true)}
           className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
         >
           <LogOut className="w-4 h-4 shrink-0 text-red-500" />
@@ -195,6 +194,8 @@ export function MobileNav({ onClose }: MobileNavProps) {
           <div className="text-[11px] text-gray-400">© 2026 BAUST Exchange</div>
         </div>
       </div>
+
+      <LogoutModal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} />
     </div>
   );
 }

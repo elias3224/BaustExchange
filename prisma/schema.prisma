@@ -108,7 +108,13 @@ model User {
   idCardRejectReason  String?
   idCardVerifiedAt    DateTime?
   hasSelectedRole     Boolean   @default(false)
+  batch               String?
+  bio                 String?
+  isSuperAdmin        Boolean   @default(false)
+  adminPermissions    String[]  @default([])
+  lastDailyLoginReminderAt DateTime?
   subscriptionPlan    String    @default("free")
+  subscriptionStartedAt    DateTime?
   subscriptionExpires DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -119,6 +125,10 @@ model User {
   wantedItems   WantedItem[]
   messagesSent  Message[] @relation("MessagesSent")
   messagesRecv  Message[] @relation("MessagesReceived")
+  msgRequestsSent MessageRequest[] @relation("MsgReqSender")
+  msgRequestsRecv MessageRequest[] @relation("MsgReqReceiver")
+  callsInitiated  CallSession[]    @relation("CallerUser")
+  callsReceived   CallSession[]    @relation("ReceiverUser")
   notifications Notification[]
   reports       Report[] @relation("ReportsMade")
   activities    Activity[]
@@ -148,6 +158,7 @@ model Category {
  */
 model Listing {
   id               String        @id @default(cuid())
+  customId         String?       @unique
   userId           String
   categoryId       String
   title            String
@@ -248,13 +259,18 @@ model WantedItem {
  * conversationId = the other participant's user id (one thread per pair).
  */
 model Message {
-  id         String  @id @default(cuid())
-  senderId   String
-  receiverId String
-  listingId  String?
-  message    String
-  isRead     Boolean @default(false)
-  createdAt  DateTime @default(now())
+  id             String    @id @default(cuid())
+  senderId       String
+  receiverId     String
+  listingId      String?
+  message        String
+  isRead         Boolean   @default(false)
+  latitude       Float?
+  longitude      Float?
+  locationName   String?
+  isLiveLocation Boolean   @default(false)
+  liveExpiresAt  DateTime?
+  createdAt      DateTime  @default(now())
 
   sender   User    @relation("MessagesSent", fields: [senderId], references: [id])
   receiver User    @relation("MessagesReceived", fields: [receiverId], references: [id])
@@ -347,4 +363,69 @@ model Payment {
 
   @@index([userId])
   @@index([status])
+}
+
+enum MessageRequestStatus {
+  pending  @map("pending")
+  accepted @map("accepted")
+  rejected @map("rejected")
+}
+
+model MessageRequest {
+  id         String               @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     MessageRequestStatus @default(pending)
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+
+  sender   User @relation("MsgReqSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("MsgReqReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+model CallSession {
+  id         String   @id @default(cuid())
+  callerId   String
+  receiverId String
+  type       String   // "audio" | "video"
+  status     String   @default("ringing") // "ringing" | "accepted" | "rejected" | "ended"
+  offer      String?
+  answer     String?
+  candidates Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  caller   User @relation("CallerUser", fields: [callerId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceiverUser", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([callerId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+model AdminAuditLog {
+  id            String   @id @default(cuid())
+  adminId       String
+  adminName     String
+  adminEmail    String
+  actionType    String
+  targetUserId  String?
+  targetEmail   String?
+  previousValue String?
+  newValue      String?
+  reason        String?
+  result        String   @default("success") // "success" | "failure"
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  @@index([adminId])
+  @@index([actionType])
+  @@index([createdAt])
+  @@index([targetUserId])
 }

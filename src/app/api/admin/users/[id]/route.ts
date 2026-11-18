@@ -7,6 +7,8 @@ import { userUpdateSchema } from '@/lib/validations';
 import { createNotification } from '@/lib/notifications';
 import { logActivity, ActivityType } from '@/lib/activity';
 import { NotificationType } from '@prisma/client';
+import { logAdminAction } from '@/lib/audit';
+import { clientIp } from '@/lib/ratelimit';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   let admin;
@@ -32,12 +34,31 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const target = await prisma.user.findUnique({ where: { id } });
     if (!target) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
+    // Super Admin protection
+    if (target.isSuperAdmin || target.email === 'eliasahmad3224@gmail.com') {
+      return NextResponse.json(
+        { error: 'Super Admin account is permanently protected and cannot be deleted.' },
+        { status: 403 }
+      );
+    }
+
+    // Super Admin protection
+    if ((target.isSuperAdmin || target.email === 'eliasahmad3224@gmail.com') && (parsed.data.role || parsed.data.status === 'blocked')) {
+      return NextResponse.json(
+        { error: 'Super Admin account is permanently protected and cannot be demoted or blocked.' },
+        { status: 403 }
+      );
+    }
+
     const data: any = {};
     if (parsed.data.role) data.role = parsed.data.role;
     if (parsed.data.status) data.status = parsed.data.status;
     if (parsed.data.department !== undefined) data.department = parsed.data.department || null;
     if (parsed.data.studentId !== undefined) data.studentId = parsed.data.studentId || null;
     if (parsed.data.phone !== undefined) data.phone = parsed.data.phone || null;
+    if (body.adminPermissions && Array.isArray(body.adminPermissions)) {
+      data.adminPermissions = body.adminPermissions;
+    }
 
     // ID card verification actions (only admins reach this route).
     if (parsed.data.idCardAction === 'approve') {
@@ -53,6 +74,58 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     const updated = await prisma.user.update({ where: { id }, data });
+
+    const ip = clientIp(req);
+    const userAgent = req.headers.get('user-agent');
+
+    // Audit Logging
+    if (parsed.data.role) {
+      await logAdminAction({
+        adminId: admin.id,
+        adminName: admin.name || 'Admin',
+        adminEmail: admin.email || 'admin@baust.edu',
+        actionType: 'user_role_change',
+        targetUserId: target.id,
+        targetEmail: target.email,
+        previousValue: target.role,
+        newValue: parsed.data.role,
+        reason: body.reason || 'Admin changed role',
+        ipAddress: ip,
+        userAgent,
+      });
+    }
+
+    if (parsed.data.status) {
+      await logAdminAction({
+        adminId: admin.id,
+        adminName: admin.name || 'Admin',
+        adminEmail: admin.email || 'admin@baust.edu',
+        actionType: 'user_status_change',
+        targetUserId: target.id,
+        targetEmail: target.email,
+        previousValue: target.status,
+        newValue: parsed.data.status,
+        reason: body.reason || 'Admin changed status',
+        ipAddress: ip,
+        userAgent,
+      });
+    }
+
+    if (parsed.data.idCardAction) {
+      await logAdminAction({
+        adminId: admin.id,
+        adminName: admin.name || 'Admin',
+        adminEmail: admin.email || 'admin@baust.edu',
+        actionType: 'id_verification',
+        targetUserId: target.id,
+        targetEmail: target.email,
+        previousValue: target.idCardStatus,
+        newValue: parsed.data.idCardAction === 'approve' ? 'approved' : 'rejected',
+        reason: data.idCardRejectReason || 'Admin reviewed ID card',
+        ipAddress: ip,
+        userAgent,
+      });
+    }
 
     if (parsed.data.idCardAction === 'approve') {
       await createNotification(
@@ -104,6 +177,14 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     const target = await prisma.user.findUnique({ where: { id } });
     if (!target) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    // Super Admin protection
+    if (target.isSuperAdmin || target.email === 'eliasahmad3224@gmail.com') {
+      return NextResponse.json(
+        { error: 'Super Admin account is permanently protected and cannot be deleted.' },
+        { status: 403 }
+      );
+    }
 
     await prisma.$transaction(async (tx) => {
       // 1. Delete requests where user is sender or receiver

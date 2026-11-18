@@ -117,8 +117,29 @@ export async function POST(req: NextRequest) {
     const autoApprove = process.env.LISTING_AUTO_APPROVE !== 'false';
     const status = autoApprove ? 'active' : 'pending';
 
+    // Generate unique customId like BX-10001
+    const lastListing = await prisma.listing.findFirst({
+      where: { customId: { startsWith: 'BX-' } },
+      orderBy: { createdAt: 'desc' },
+      select: { customId: true },
+    });
+    let nextNum = 10001;
+    if (lastListing?.customId) {
+      const match = lastListing.customId.match(/^BX-(\d+)$/);
+      if (match) {
+        nextNum = parseInt(match[1], 10) + 1;
+      }
+    }
+    let customId = `BX-${nextNum}`;
+    // Verify uniqueness
+    const exists = await prisma.listing.findUnique({ where: { customId } });
+    if (exists) {
+      customId = `BX-${nextNum + Math.floor(Math.random() * 900) + 10}`;
+    }
+
     const listing = await prisma.listing.create({
       data: {
+        customId,
         userId: user.id,
         categoryId: category.id,
         title: data.title,

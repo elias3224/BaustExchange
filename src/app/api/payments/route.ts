@@ -30,11 +30,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'This Transaction ID (TrxID) has already been submitted.' }, { status: 400 });
     }
 
+    let resolvedListingId: string | null = null;
+    if (listingId) {
+      const listing = await prisma.listing.findFirst({
+        where: {
+          OR: [{ id: listingId.trim() }, { customId: listingId.trim() }],
+        },
+      });
+      if (listing) {
+        resolvedListingId = listing.id;
+      }
+    }
+
     const payment = await prisma.payment.create({
       data: {
         userId: user.id,
         type,
-        listingId: listingId || null,
+        listingId: resolvedListingId,
         amount: Number(amount),
         paymentMethod,
         trxId: trxId.trim(),

@@ -6,6 +6,8 @@ import { requireAdmin } from '@/lib/authz';
 import { createNotification } from '@/lib/notifications';
 import { logActivity, ActivityType } from '@/lib/activity';
 import { ListingStatus, NotificationType } from '@prisma/client';
+import { logAdminAction } from '@/lib/audit';
+import { clientIp } from '@/lib/ratelimit';
 
 const ACTION_STATUS: Record<string, ListingStatus> = {
   approve: 'active',
@@ -57,6 +59,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       `${action}d listing "${listing.title}"`,
       admin.id
     );
+
+    const ip = clientIp(req);
+    const userAgent = req.headers.get('user-agent');
+    await logAdminAction({
+      adminId: admin.id,
+      adminName: admin.name || 'Admin',
+      adminEmail: admin.email || 'admin@baust.edu',
+      actionType: 'listing_status_change',
+      targetUserId: listing.userId,
+      previousValue: listing.status,
+      newValue: status,
+      reason: body.reason || `Admin ${action}d listing "${listing.title}" (${listing.customId || listing.id})`,
+      ipAddress: ip,
+      userAgent,
+    });
+
     return NextResponse.json(updated);
   } catch (err) {
     console.error('PATCH /api/admin/listings/[id] error:', err);

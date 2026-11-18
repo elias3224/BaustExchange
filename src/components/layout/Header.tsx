@@ -7,12 +7,15 @@ import { useState, useRef, useEffect } from 'react';
 import { Search, User, Menu, X } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { MobileNav } from './MobileNav';
+import { ProAvatar } from '@/components/ui/ProAvatar';
+import { LogoutModal } from './LogoutModal';
 
 export function Header() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
   const user = (session?.user || ({} as any));
@@ -130,6 +133,12 @@ export function Header() {
                 ) : (
                   <User className="w-8 h-8 rounded-full bg-gray-200 p-1 text-gray-600" />
                 )}
+                <ProAvatar
+                  src={user?.image}
+                  name={user?.name}
+                  isPro={user?.subscriptionPlan === 'pro' || user?.isVerifiedSeller}
+                  size="sm"
+                />
                 <span className="hidden sm:inline-block font-medium text-gray-700 max-w-[100px] md:max-w-[140px] truncate">
                   {user?.name || 'User'}
                 </span>
@@ -179,6 +188,7 @@ export function Header() {
                     onClick={() => {
                       setProfileOpen(false);
                       signOut({ callbackUrl: '/' });
+                      setShowLogoutModal(true);
                     }}
                     className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 active:bg-red-100 border-t border-gray-100 font-medium"
                     role="menuitem"
@@ -224,6 +234,8 @@ export function Header() {
           </div>
         </>
       )}
+
+      <LogoutModal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} />
     </header>
   );
 }

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Alert } from '@/components/ui/Alert';
 import { REPORT_REASONS } from '@/lib/utils';
-import { Heart, Edit } from 'lucide-react';
+import { Heart, Edit, CheckCircle2, MessageSquare, ArrowRight, X } from 'lucide-react';
 import { useFavorites } from '@/components/marketplace/FavoritesContext';
 
 export function ItemActions({
@@ -27,6 +27,7 @@ export function ItemActions({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [busy, setBusy] = useState(false);
+  const [requestSubmitted, setRequestSubmitted] = useState(false);
 
   // Automatic Favorite -> Wanted Items feature
   const { isFavorited, toggleFavorite } = useFavorites();
@@ -72,6 +73,7 @@ export function ItemActions({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to send request');
       setSuccess('Request sent! The owner has been notified.');
+      setRequestSubmitted(true);
       setShowRequest(false);
       setMessage('');
       setOfferedItem('');
@@ -284,6 +286,54 @@ export function ItemActions({
             {busy ? 'Submitting…' : 'Submit Report'}
           </button>
         </form>
+      )}
+
+      {/* Request Success Modal */}
+      {requestSubmitted && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 text-center relative">
+            <button
+              onClick={() => setRequestSubmitted(false)}
+              className="absolute top-4 right-4 p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
+              <CheckCircle2 className="w-10 h-10" />
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-gray-900">🎉 Request Sent Successfully!</h2>
+              <p className="text-sm text-gray-600">
+                Your request for <span className="font-semibold text-gray-800">"{listingTitle}"</span> has been submitted to <span className="font-semibold text-gray-800">{ownerName}</span>.
+              </p>
+            </div>
+
+            <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3 text-left text-xs text-emerald-900 space-y-1">
+              <div className="font-semibold">Next Steps:</div>
+              <p className="text-gray-600">The seller will receive a notification and can accept or counter your offer. You can track this in your Exchange Requests tab.</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => router.push('/exchange-requests')}
+                className="w-full py-2.5 px-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-semibold text-xs transition-colors flex items-center justify-center gap-1.5"
+              >
+                View Requests <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => router.push(`/messages?with=${ownerId}`)}
+                className="w-full py-2.5 px-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-semibold text-xs transition-colors flex items-center justify-center gap-1.5"
+              >
+                <MessageSquare className="w-3.5 h-3.5" /> Chat Seller
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

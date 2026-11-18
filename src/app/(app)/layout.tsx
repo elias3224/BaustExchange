@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
+import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -7,6 +8,7 @@ import { RightSidebar } from '@/components/layout/RightSidebar';
 import { GlobalBackButton } from '@/components/layout/GlobalBackButton';
 import { SessionProviderInner } from '@/components/ui/SessionContext';
 import { FavoritesProvider } from '@/components/marketplace/FavoritesContext';
+import { FirstLoginReminderModal } from '@/components/profile/FirstLoginReminderModal';
 import { SessionProvider } from 'next-auth/react';
 
 /**
@@ -30,15 +32,23 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     redirect('/auth/logout');
   }
 
-  // NOTE: Mandatory ID card verification gate removed. BAUST ID verification
-  // is now an optional profile action: users submit their ID card from
-  // /profile (POST /api/profile/verify-id) and an admin approves it —
-  // granting the "BAUST Verified" badge.
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: {
+      id: true,
+      department: true,
+      studentId: true,
+      phone: true,
+      idCardStatus: true,
+      lastDailyLoginReminderAt: true,
+    },
+  });
 
   return (
     <SessionProvider session={session}>
       <SessionProviderInner user={session.user}>
         <FavoritesProvider>
+          <FirstLoginReminderModal user={dbUser} />
           <div className="h-screen supports-[height:100dvh]:h-dvh w-full flex flex-col overflow-hidden bg-gray-50">
             <Header />
             <div className="flex-1 flex min-h-0 overflow-hidden w-full relative">

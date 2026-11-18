@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { currentUser } from '@/lib/authz';
+import { logAdminAction } from '@/lib/audit';
+import { clientIp } from '@/lib/ratelimit';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await currentUser();
@@ -30,6 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (status === 'approved') {
       if (payment.type === 'pro_subscription') {
         // Upgrade user to PRO & Verified Seller
+        const now = new Date();
         const expires = new Date();
         expires.setDate(expires.getDate() + 30); // 30 days
         await prisma.user.update({
@@ -37,6 +40,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           data: {
             subscriptionPlan: 'pro',
             isVerifiedSeller: true,
+            subscriptionStartedAt: now,
             subscriptionExpires: expires,
           },
         });
@@ -77,6 +81,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         },
       });
     }
+
+    const ip = clientIp(req);
+    const userAgent = req.headers.get('user-agent');
+    await logAdminAction({
+      adminId: user.id,
+      adminName: user.name || 'Admin',
+      adminEmail: user.email || 'admin@baust.edu',
+      actionType: 'payment_status_change',
+      targetUserId: payment.userId,
+      previousValue: payment.status,
+      newValue: status,
+      reason: `Manual payment ${status} (TrxID: ${payment.trxId}, ৳${payment.amount})`,
+      ipAddress: ip,
+      userAgent,
+    });
 
     return NextResponse.json({ success: true, payment: updatedPayment });
   } catch (err) {
