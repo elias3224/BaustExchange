@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma';
 import { currentUser } from '@/lib/authz';
 import { findMatchesForListing } from '@/lib/matching';
 import { ItemActions } from '@/components/listings/ItemActions';
+import { ProductImageGallery } from '@/components/listings/ProductImageGallery';
 import { RoleBadge } from '@/components/ui/SessionContext';
 import { ProAvatar } from '@/components/ui/ProAvatar';
 import { isActualProSubscription } from '@/lib/pro';
@@ -69,24 +70,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Gallery */}
-        <div className="space-y-3">
-          <div className="aspect-[4/3] bg-gray-100 rounded-md overflow-hidden">
-            {listing.images.length > 0 ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={listing.images[0].url} alt={listing.title} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400">No image</div>
-            )}
-          </div>
-          {listing.images.length > 1 && (
-            <div className="grid grid-cols-5 gap-2">
-              {listing.images.slice(1, 6).map((img) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={img.id} src={img.url} alt={listing.title} className="aspect-square w-full object-cover rounded-md border border-gray-200" />
-              ))}
-            </div>
-          )}
-        </div>
+        <ProductImageGallery images={listing.images} title={listing.title} />
 
         {/* Details */}
         <div className="space-y-4">
