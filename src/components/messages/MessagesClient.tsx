@@ -367,9 +367,8 @@ export function MessagesClient({
         if (data.isProRequired) {
           setProFeatureName(type === 'video' ? 'Video Calling' : 'Voice Calling');
           setProModalOpen(true);
-          return;
         }
-        throw new Error(data.error || 'Could not initiate call');
+        throw new Error(data.error || 'Calling is available exclusively between active PRO members.');
       }
 
       setActiveCallSession({

@@ -33,6 +33,43 @@ export function isActualProSubscription(user?: {
   return !isNaN(expiresAt) && expiresAt > Date.now();
 }
 
+export type ProSubscriptionStatus = 'active' | 'expiring_soon' | 'expired' | 'none';
+
+export function getProSubscriptionStatus(user?: {
+  subscriptionPlan?: string | null;
+  subscriptionExpires?: Date | string | null;
+} | null): ProSubscriptionStatus {
+  if (!user || user.subscriptionPlan !== 'pro' || !user.subscriptionExpires) {
+    return 'none';
+  }
+
+  const expiresAt = new Date(user.subscriptionExpires).getTime();
+  if (isNaN(expiresAt) || expiresAt <= Date.now()) {
+    return 'expired';
+  }
+
+  const daysRemaining = Math.ceil((expiresAt - Date.now()) / (1000 * 60 * 60 * 24));
+  if (daysRemaining <= 3) {
+    return 'expiring_soon';
+  }
+
+  return 'active';
+}
+
+export function getRemainingDays(expiresAt?: Date | string | null): number {
+  if (!expiresAt) return 0;
+  const expTime = new Date(expiresAt).getTime();
+  if (isNaN(expTime)) return 0;
+  return Math.max(0, Math.ceil((expTime - Date.now()) / (1000 * 60 * 60 * 24)));
+}
+
+export function getDaysSinceActivation(startedAt?: Date | string | null): number {
+  if (!startedAt) return 0;
+  const startTime = new Date(startedAt).getTime();
+  if (isNaN(startTime)) return 0;
+  return Math.max(0, Math.floor((Date.now() - startTime) / (1000 * 60 * 60 * 24)));
+}
+
 export type ProFeature =
   | 'audio_call'
   | 'video_call'

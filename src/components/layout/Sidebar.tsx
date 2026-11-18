@@ -247,29 +247,55 @@ export function Sidebar() {
 
             {user?.role === 'admin' && (
               isCollapsed ? (
-                <Link
-                  href="/admin"
-                  title="Admin Panel"
-                  className={`flex items-center justify-center p-2 rounded-md transition-colors ${
-                    pathname?.startsWith('/admin')
-                      ? 'bg-purple-100 text-purple-800 font-semibold'
-                      : 'text-purple-700 hover:bg-purple-50'
-                  }`}
-                >
-                  <Shield className="w-4 h-4 shrink-0 text-purple-600" />
-                </Link>
+                <>
+                  <Link
+                    href="/admin"
+                    title="Admin Panel"
+                    className={`flex items-center justify-center p-2 rounded-md transition-colors ${
+                      pathname === '/admin'
+                        ? 'bg-purple-100 text-purple-800 font-semibold'
+                        : 'text-purple-700 hover:bg-purple-50'
+                    }`}
+                  >
+                    <Shield className="w-4 h-4 shrink-0 text-purple-600" />
+                  </Link>
+                  <Link
+                    href="/admin/pro-users"
+                    title="PRO User Management"
+                    className={`flex items-center justify-center p-2 rounded-md transition-colors ${
+                      pathname?.startsWith('/admin/pro-users')
+                        ? 'bg-amber-100 text-amber-800 font-semibold'
+                        : 'text-amber-700 hover:bg-amber-50'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4 shrink-0 text-amber-600" />
+                  </Link>
+                </>
               ) : (
-                <Link
-                  href="/admin"
-                  className={`flex items-center gap-2.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
-                    pathname?.startsWith('/admin')
-                      ? 'bg-purple-100 text-purple-800 font-semibold'
-                      : 'text-purple-700 hover:bg-purple-50'
-                  }`}
-                >
-                  <Shield className="w-4 h-4 shrink-0 text-purple-600" />
-                  <span className="truncate">Admin Panel</span>
-                </Link>
+                <>
+                  <Link
+                    href="/admin"
+                    className={`flex items-center gap-2.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+                      pathname === '/admin'
+                        ? 'bg-purple-100 text-purple-800 font-semibold'
+                        : 'text-purple-700 hover:bg-purple-50'
+                    }`}
+                  >
+                    <Shield className="w-4 h-4 shrink-0 text-purple-600" />
+                    <span className="truncate">Admin Panel</span>
+                  </Link>
+                  <Link
+                    href="/admin/pro-users"
+                    className={`flex items-center gap-2.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+                      pathname?.startsWith('/admin/pro-users')
+                        ? 'bg-amber-100 text-amber-800 font-semibold'
+                        : 'text-amber-700 hover:bg-amber-50'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4 shrink-0 text-amber-600" />
+                    <span className="truncate">PRO Management</span>
+                  </Link>
+                </>
               )
             )}
           </div>

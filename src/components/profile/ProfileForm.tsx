@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert } from '@/components/ui/Alert';
 import { DEPARTMENTS } from '@/lib/utils';
+import { useFormDraft } from '@/hooks/useFormDraft';
 import {
   GraduationCap,
   Upload,
@@ -44,16 +45,47 @@ interface ProfileFormProps {
 export function ProfileForm({ initial }: ProfileFormProps) {
   const router = useRouter();
 
-  // Hidden by default; clicking "Edit Profile" toggles it open
+  // Form State with persistence
+  const {
+    values: profileData,
+    setValues: setProfileData,
+    hasRestoredDraft,
+    clearDraft,
+    discardDraft,
+  } = useFormDraft({
+    formId: 'profile-edit',
+    initialValues: {
+      name: initial.name || '',
+      department: initial.department || '',
+      studentId: initial.studentId || '',
+      phone: initial.phone || '',
+      batch: initial.batch || '',
+      bio: initial.bio || '',
+    },
+  });
+
+  // Hidden by default; clicking "Edit Profile" toggles it open (or opens if draft restored)
   const [isEditing, setIsEditing] = useState(false);
 
-  // Form State
-  const [name, setName] = useState(initial.name || '');
-  const [department, setDepartment] = useState(initial.department || '');
-  const [studentId, setStudentId] = useState(initial.studentId || '');
-  const [phone, setPhone] = useState(initial.phone || '');
-  const [batch, setBatch] = useState(initial.batch || '');
-  const [bio, setBio] = useState(initial.bio || '');
+  useEffect(() => {
+    if (hasRestoredDraft) {
+      setIsEditing(true);
+    }
+  }, [hasRestoredDraft]);
+
+  const name = profileData.name;
+  const department = profileData.department;
+  const studentId = profileData.studentId;
+  const phone = profileData.phone;
+  const batch = profileData.batch;
+  const bio = profileData.bio;
+
+  const setName = (val: string) => setProfileData((p) => ({ ...p, name: val }));
+  const setDepartment = (val: string) => setProfileData((p) => ({ ...p, department: val }));
+  const setStudentId = (val: string) => setProfileData((p) => ({ ...p, studentId: val }));
+  const setPhone = (val: string) => setProfileData((p) => ({ ...p, phone: val }));
+  const setBatch = (val: string) => setProfileData((p) => ({ ...p, batch: val }));
+  const setBio = (val: string) => setProfileData((p) => ({ ...p, bio: val }));
 
   // BAUST ID Card Verification State
   const [idCardFile, setIdCardFile] = useState<File | null>(null);
@@ -94,6 +126,7 @@ export function ProfileForm({ initial }: ProfileFormProps) {
         throw new Error(data.error || 'Failed to update profile');
       }
 
+      clearDraft();
       setSuccess('Profile updated successfully!');
       setIsEditing(false);
       router.refresh();
@@ -199,6 +232,24 @@ export function ProfileForm({ initial }: ProfileFormProps) {
           onSubmit={handleSubmitProfile}
           className="p-5 sm:p-6 bg-white border border-brand-200 rounded-xl shadow-xs space-y-4 animate-in fade-in duration-200"
         >
+          {hasRestoredDraft && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center justify-between shadow-2xs">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>
+                  <strong>Draft Restored:</strong> Restored unsaved profile edits from your previous session.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={discardDraft}
+                className="text-blue-700 hover:text-blue-900 font-semibold underline shrink-0 ml-2"
+              >
+                Discard Draft
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">Full Name</label>

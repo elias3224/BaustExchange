@@ -3,12 +3,30 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert } from '@/components/ui/Alert';
+import { useFormDraft } from '@/hooks/useFormDraft';
+import { Clock } from 'lucide-react';
 
 interface CategoryOpt { id: string; name: string }
 
 export function WantedForm({ categories }: { categories: CategoryOpt[] }) {
   const router = useRouter();
-  const [form, setForm] = useState({ title: '', categoryId: '', description: '', budget: '' });
+
+  const {
+    values: form,
+    setValues: setForm,
+    hasRestoredDraft,
+    clearDraft,
+    discardDraft,
+  } = useFormDraft({
+    formId: 'post-wanted',
+    initialValues: {
+      title: '',
+      categoryId: '',
+      description: '',
+      budget: '',
+    },
+  });
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -33,7 +51,7 @@ export function WantedForm({ categories }: { categories: CategoryOpt[] }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create wanted item');
       setSuccess('Wanted item added!');
-      setForm({ title: '', categoryId: '', description: '', budget: '' });
+      clearDraft();
       setTimeout(() => router.push('/wanted'), 1000);
     } catch (err: any) {
       setError(err.message);
@@ -50,6 +68,24 @@ export function WantedForm({ categories }: { categories: CategoryOpt[] }) {
       </p>
       {error && <Alert type="error">{error}</Alert>}
       {success && <Alert type="success">{success}</Alert>}
+
+      {hasRestoredDraft && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center justify-between shadow-2xs animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>
+              <strong>Draft Restored:</strong> Your previous wanted item details were restored.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={discardDraft}
+            className="text-blue-700 hover:text-blue-900 font-semibold underline shrink-0 ml-2"
+          >
+            Discard Draft
+          </button>
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-5 bg-white border border-gray-200 rounded-md p-6">
         <div>
           <label className="block text-sm font-medium mb-1">What are you looking for? *</label>

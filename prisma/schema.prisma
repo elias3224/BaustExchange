@@ -114,6 +114,7 @@ model User {
   adminPermissions    String[]  @default([])
   lastDailyLoginReminderAt DateTime?
   subscriptionPlan    String    @default("free")
+  subscriptionStatus  String    @default("none")
   subscriptionStartedAt    DateTime?
   subscriptionExpires DateTime?
   createdAt     DateTime  @default(now())
@@ -133,6 +134,7 @@ model User {
   reports       Report[] @relation("ReportsMade")
   activities    Activity[]
   payments      Payment[]
+  subscriptionHistories SubscriptionHistory[]
 
   @@index([status])
   @@index([role])
@@ -428,4 +430,27 @@ model AdminAuditLog {
   @@index([actionType])
   @@index([createdAt])
   @@index([targetUserId])
+}
+
+model SubscriptionHistory {
+  id              String   @id @default(cuid())
+  userId          String
+  plan            String   @default("pro")
+  packageDuration Int?     // duration in days, e.g. 7, 30, 90, 365
+  startDate       DateTime @default(now())
+  endDate         DateTime
+  status          String   @default("active") // "active" | "expired" | "renewed" | "cancelled"
+  action          String   @default("upgrade") // "upgrade" | "renew" | "extension" | "early_expiration" | "admin_override"
+  amount          Float?
+  paymentId       String?
+  adminId         String?
+  adminNotes      String?
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
 }

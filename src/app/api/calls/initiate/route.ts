@@ -1,24 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { currentUser } from '@/lib/authz';
-import { checkProEntitlement } from '@/lib/pro';
+import { isActualProSubscription } from '@/lib/pro';
 
 export async function POST(req: NextRequest) {
   const user = await currentUser(req);
   if (!user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-  }
-
-  // Check PRO entitlement for calls
-  const entitlement = await checkProEntitlement(user.id, 'audio_video_call');
-  if (!entitlement.allowed) {
-    return NextResponse.json(
-      {
-        error: 'Audio and Video calls are exclusive to Campus PRO members. Upgrade to PRO to call sellers directly!',
-        isProRequired: true,
-      },
-      { status: 403 }
-    );
   }
 
   try {
@@ -29,9 +17,46 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required call parameters' }, { status: 400 });
     }
 
-    const receiver = await prisma.user.findUnique({ where: { id: receiverId } });
+    // Validate both caller and receiver active PRO status
+    const [caller, receiver] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+          id: true,
+          name: true,
+          subscriptionPlan: true,
+          subscriptionExpires: true,
+        },
+      }),
+      prisma.user.findUnique({
+        where: { id: receiverId },
+        select: {
+          id: true,
+          name: true,
+          subscriptionPlan: true,
+          subscriptionExpires: true,
+        },
+      }),
+    ]);
+
     if (!receiver) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const isCallerPro = isActualProSubscription(caller);
+    const isReceiverPro = isActualProSubscription(receiver);
+
+    // Strictly enforce: PRO-to-PRO only
+    // Blocks: PRO -> Non-PRO, Non-PRO -> PRO, Non-PRO -> Non-PRO
+    if (!isCallerPro || !isReceiverPro) {
+      return NextResponse.json(
+        {
+          error: 'Calling is available exclusively between active PRO members.',
+          isProRequired: !isCallerPro,
+          isReceiverNotPro: !isReceiverPro,
+        },
+        { status: 403 }
+      );
     }
 
     // Clean up any stale ringing calls between these two users

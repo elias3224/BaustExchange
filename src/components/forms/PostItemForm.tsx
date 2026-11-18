@@ -7,7 +7,8 @@ import Link from 'next/link';
 import { Alert } from '@/components/ui/Alert';
 import { PostItemFields } from './PostItemFields';
 import { ImageUploader } from './ImageUploader';
-import { Sparkles, CheckCircle2, ArrowRight, ShoppingBag, Eye, Lock } from 'lucide-react';
+import { useFormDraft } from '@/hooks/useFormDraft';
+import { Sparkles, CheckCircle2, ArrowRight, ShoppingBag, Eye, Lock, Clock } from 'lucide-react';
 
 interface CategoryOpt { id: string; name: string }
 
@@ -27,18 +28,29 @@ interface FormState {
 export default function PostItemPage({ categories }: { categories: CategoryOpt[] }) {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const [form, setForm] = useState<FormState>({
-    title: '',
-    description: '',
-    categoryId: '',
-    condition: 'new',
-    transactionType: 'sell',
-    price: '',
-    quantity: '1',
-    exchangeFor: '',
-    location: '',
-    contactPreference: '',
+
+  const {
+    values: form,
+    setValues: setForm,
+    hasRestoredDraft,
+    clearDraft,
+    discardDraft,
+  } = useFormDraft<FormState>({
+    formId: 'post-item',
+    initialValues: {
+      title: '',
+      description: '',
+      categoryId: '',
+      condition: 'new',
+      transactionType: 'sell',
+      price: '',
+      quantity: '1',
+      exchangeFor: '',
+      location: '',
+      contactPreference: '',
+    },
   });
+
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -171,6 +183,9 @@ export default function PostItemPage({ categories }: { categories: CategoryOpt[]
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create listing');
 
+      // Clear persisted form draft on success
+      clearDraft();
+
       // Trigger success popup dialog
       setCreatedListing(data);
     } catch (err: any) {
@@ -205,6 +220,24 @@ export default function PostItemPage({ categories }: { categories: CategoryOpt[]
 
       {error && <Alert type="error">{error}</Alert>}
       {aiSuccessMsg && <Alert type="success">{aiSuccessMsg}</Alert>}
+
+      {hasRestoredDraft && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center justify-between shadow-2xs animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>
+              <strong>Draft Restored:</strong> Your previous progress was saved and restored.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={discardDraft}
+            className="text-blue-700 hover:text-blue-900 font-semibold underline shrink-0 ml-2"
+          >
+            Discard Draft
+          </button>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <ImageUploader previews={previews} images={images} onRemove={removeImage} onAdd={handleImageChange} />

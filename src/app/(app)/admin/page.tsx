@@ -64,6 +64,8 @@ export default async function AdminPage() {
         adminPermissions: true,
         isVerifiedSeller: true,
         subscriptionPlan: true,
+        subscriptionStartedAt: true,
+        subscriptionExpires: true,
         createdAt: true,
         _count: { select: { listings: true } },
       },

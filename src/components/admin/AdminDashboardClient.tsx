@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatPrice, timeAgo } from '@/lib/utils';
@@ -26,6 +26,9 @@ import {
   History,
   Shield,
   Filter,
+  Sparkles,
+  Clock,
+  ArrowRight,
 } from 'lucide-react';
 
 interface AdminDashboardClientProps {
@@ -85,6 +88,44 @@ export function AdminDashboardClient({
   const [selectedLogDetail, setSelectedLogDetail] = useState<any | null>(null);
 
   const isSuperAdmin = currentUser.isSuperAdmin || currentUser.email === 'eliasahmad3224@gmail.com';
+
+  const nowTime = Date.now();
+  const threeDaysTime = nowTime + 3 * 24 * 60 * 60 * 1000;
+  const sevenDaysTime = nowTime - 7 * 24 * 60 * 60 * 1000;
+
+  const proStats = useMemo(() => {
+    let totalPro = 0;
+    let activePro = 0;
+    let expiredPro = 0;
+    let expiringSoon = 0;
+    let newlyUpgraded = 0;
+
+    initialUsers.forEach((u: any) => {
+      const isProPlan = u.subscriptionPlan === 'pro' || u.subscriptionStatus === 'active' || u.subscriptionStatus === 'expired';
+      const hasExpiry = Boolean(u.subscriptionExpires);
+      const expTime = hasExpiry ? new Date(u.subscriptionExpires).getTime() : 0;
+      const startTime = u.subscriptionStartedAt ? new Date(u.subscriptionStartedAt).getTime() : 0;
+
+      if (isProPlan || hasExpiry) {
+        totalPro++;
+      }
+
+      if (u.subscriptionPlan === 'pro' && expTime > nowTime) {
+        activePro++;
+        if (expTime <= threeDaysTime) {
+          expiringSoon++;
+        }
+      } else if (u.subscriptionPlan === 'pro' && expTime <= nowTime) {
+        expiredPro++;
+      }
+
+      if (startTime >= sevenDaysTime) {
+        newlyUpgraded++;
+      }
+    });
+
+    return { totalPro, activePro, expiredPro, expiringSoon, newlyUpgraded };
+  }, [initialUsers, nowTime, threeDaysTime, sevenDaysTime]);
 
   async function handleAction(url: string, body: any = {}, method = 'PATCH') {
     setBusyId(url);
@@ -249,11 +290,102 @@ export function AdminDashboardClient({
               </button>
             </>
           )}
+          <Link
+            href="/admin/pro-users"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs hover:from-amber-600 hover:to-rose-600"
+          >
+            <Sparkles className="w-3.5 h-3.5" /> PRO Management
+          </Link>
         </div>
       </div>
 
       {activeTab === 'cards' && (
         <>
+          {/* Clickable PRO Statistics Section */}
+          <div className="bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-indigo-500/10 border border-amber-200/80 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-500" />
+                <h2 className="font-bold text-gray-900 text-base">Campus PRO Analytics & Membership</h2>
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                  Live Stats
+                </span>
+              </div>
+              <Link
+                href="/admin/pro-users"
+                className="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1 hover:underline"
+              >
+                Open PRO User Management <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {/* Total PRO Users */}
+              <Link
+                href="/admin/pro-users?filter=all"
+                className="p-3.5 bg-white border border-purple-200 hover:border-purple-400 rounded-xl transition-all shadow-2xs hover:shadow-xs group"
+              >
+                <div className="flex items-center justify-between text-xs font-semibold text-purple-700 mb-1">
+                  <span>Total PRO</span>
+                  <Sparkles className="w-3.5 h-3.5 text-purple-500 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="text-2xl font-black text-gray-900">{proStats.totalPro}</div>
+                <div className="text-[10px] text-gray-400 mt-1">All registered PRO users &rarr;</div>
+              </Link>
+
+              {/* Active PRO Users */}
+              <Link
+                href="/admin/pro-users?filter=active"
+                className="p-3.5 bg-white border border-emerald-200 hover:border-emerald-400 rounded-xl transition-all shadow-2xs hover:shadow-xs group"
+              >
+                <div className="flex items-center justify-between text-xs font-semibold text-emerald-700 mb-1">
+                  <span>Active PRO</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="text-2xl font-black text-emerald-900">{proStats.activePro}</div>
+                <div className="text-[10px] text-emerald-600 mt-1 font-medium">Active memberships &rarr;</div>
+              </Link>
+
+              {/* Expiring Soon */}
+              <Link
+                href="/admin/pro-users?filter=expiring_soon"
+                className="p-3.5 bg-white border border-amber-200 hover:border-amber-400 rounded-xl transition-all shadow-2xs hover:shadow-xs group"
+              >
+                <div className="flex items-center justify-between text-xs font-semibold text-amber-700 mb-1">
+                  <span>Expiring Soon</span>
+                  <Clock className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="text-2xl font-black text-amber-900">{proStats.expiringSoon}</div>
+                <div className="text-[10px] text-amber-600 mt-1 font-medium">Expires in ≤ 3 days &rarr;</div>
+              </Link>
+
+              {/* Expired PRO Users */}
+              <Link
+                href="/admin/pro-users?filter=expired"
+                className="p-3.5 bg-white border border-red-200 hover:border-red-400 rounded-xl transition-all shadow-2xs hover:shadow-xs group"
+              >
+                <div className="flex items-center justify-between text-xs font-semibold text-red-700 mb-1">
+                  <span>Expired PRO</span>
+                  <XCircle className="w-3.5 h-3.5 text-red-500 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="text-2xl font-black text-red-900">{proStats.expiredPro}</div>
+                <div className="text-[10px] text-red-600 mt-1 font-medium">Expired accounts &rarr;</div>
+              </Link>
+
+              {/* Newly Upgraded PRO Users */}
+              <Link
+                href="/admin/pro-users?filter=all"
+                className="p-3.5 bg-white border border-blue-200 hover:border-blue-400 rounded-xl transition-all shadow-2xs hover:shadow-xs col-span-2 sm:col-span-1 group"
+              >
+                <div className="flex items-center justify-between text-xs font-semibold text-blue-700 mb-1">
+                  <span>New Upgrades</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-blue-500 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+                <div className="text-2xl font-black text-blue-900">{proStats.newlyUpgraded}</div>
+                <div className="text-[10px] text-blue-600 mt-1 font-medium">Last 7 days upgrades &rarr;</div>
+              </Link>
+            </div>
+          </div>
           {/* 6 Live Statistics Cards Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             {statCards.map((card) => {

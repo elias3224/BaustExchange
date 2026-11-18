@@ -47,9 +47,24 @@ export async function POST(req: NextRequest) {
           where: { id: payment.userId },
           data: {
             subscriptionPlan: 'pro',
+            subscriptionStatus: 'active',
             isVerifiedSeller: true,
             subscriptionStartedAt: now,
             subscriptionExpires: expires,
+          },
+        });
+
+        await prisma.subscriptionHistory.create({
+          data: {
+            userId: payment.userId,
+            plan: 'pro',
+            packageDuration: 30,
+            startDate: now,
+            endDate: expires,
+            status: 'active',
+            action: 'upgrade',
+            amount: payment.amount,
+            paymentId: payment.id,
           },
         });
       } else if (payment.type === 'item_pin' && payment.listingId) {

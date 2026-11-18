@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert } from '@/components/ui/Alert';
+import { useFormDraft } from '@/hooks/useFormDraft';
+import { Clock } from 'lucide-react';
 
 interface CategoryOpt { id: string; name: string }
 
@@ -14,18 +16,29 @@ export default function EditItemForm({
   categories: CategoryOpt[];
 }) {
   const router = useRouter();
-  const [form, setForm] = useState({
-    title: listing.title || '',
-    description: listing.description || '',
-    categoryId: listing.categoryId || '',
-    condition: listing.condition || 'new',
-    transactionType: listing.transactionType || 'sell',
-    price: listing.price != null ? String(listing.price) : '',
-    quantity: listing.quantity != null ? String(listing.quantity) : '1',
-    exchangeFor: listing.exchangeFor || '',
-    location: listing.location || '',
-    contactPreference: listing.contactPreference || '',
+
+  const {
+    values: form,
+    setValues: setForm,
+    hasRestoredDraft,
+    clearDraft,
+    discardDraft,
+  } = useFormDraft({
+    formId: `edit-item-${listing.id}`,
+    initialValues: {
+      title: listing.title || '',
+      description: listing.description || '',
+      categoryId: listing.categoryId || '',
+      condition: listing.condition || 'new',
+      transactionType: listing.transactionType || 'sell',
+      price: listing.price != null ? String(listing.price) : '',
+      quantity: listing.quantity != null ? String(listing.quantity) : '1',
+      exchangeFor: listing.exchangeFor || '',
+      location: listing.location || '',
+      contactPreference: listing.contactPreference || '',
+    },
   });
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -55,6 +68,7 @@ export default function EditItemForm({
       if (!res.ok) throw new Error(data.error || 'Failed to update listing');
 
       setSuccess('Listing updated successfully!');
+      clearDraft();
       setTimeout(() => router.push(`/item/${listing.id}`), 1000);
     } catch (err: any) {
       setError(err.message);
@@ -78,6 +92,24 @@ export default function EditItemForm({
 
       {error && <Alert type="error">{error}</Alert>}
       {success && <Alert type="success">{success}</Alert>}
+
+      {hasRestoredDraft && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center justify-between shadow-2xs animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>
+              <strong>Draft Restored:</strong> Restored unsaved modifications from your previous session.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={discardDraft}
+            className="text-blue-700 hover:text-blue-900 font-semibold underline shrink-0 ml-2"
+          >
+            Discard Draft
+          </button>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-5 bg-white p-6 border border-gray-200 rounded-md shadow-sm">
         <div>
