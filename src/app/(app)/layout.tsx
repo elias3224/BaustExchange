@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { RightSidebar } from '@/components/layout/RightSidebar';
+import { GlobalBackButton } from '@/components/layout/GlobalBackButton';
 import { SessionProviderInner } from '@/components/ui/SessionContext';
 import { FavoritesProvider } from '@/components/marketplace/FavoritesContext';
 import { SessionProvider } from 'next-auth/react';
@@ -43,7 +44,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             <div className="flex-1 flex min-h-0 overflow-hidden w-full relative">
               <Sidebar />
               <div className="flex-1 h-full overflow-y-auto min-w-0">
-                <main className="min-w-0 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 max-w-7xl mx-auto pb-safe">{children}</main>
+                <main className="min-w-0 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 max-w-7xl mx-auto pb-safe">
+                  <div className="mb-3 sm:mb-4 flex items-center">
+                    <GlobalBackButton />
+                  </div>
+                  {children}
+                </main>
               </div>
               <RightSidebar />
             </div>
