@@ -202,23 +202,23 @@ export function ProUsersManagement() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Top Header Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-200">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-gray-200">
+        <div className="flex items-start sm:items-center gap-2.5 sm:gap-3">
           <Link
             href="/admin"
-            className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1.5 sm:p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors shrink-0 mt-0.5 sm:mt-0"
             title="Back to Admin Dashboard"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Sparkles className="w-6 h-6 text-amber-500" />
-              Campus PRO User Management
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 shrink-0" />
+              <span>Campus PRO User Management</span>
             </h1>
-            <p className="text-xs sm:text-sm text-gray-500">
+            <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
               Track subscriptions, manage renewals & extensions, monitor analytics, and enforce automatic expirations.
             </p>
           </div>
@@ -227,7 +227,7 @@ export function ProUsersManagement() {
         <button
           type="button"
           onClick={() => setManualUpgradeModal(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all active:scale-95 shrink-0"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all active:scale-95 shrink-0"
         >
           <Plus className="w-4 h-4" />
           Manual PRO Upgrade
@@ -235,12 +235,12 @@ export function ProUsersManagement() {
       </div>
 
       {/* 2. Interactive PRO Statistics Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
         {/* Total PRO Users */}
         <button
           type="button"
           onClick={() => setFilter('all')}
-          className={`p-4 rounded-xl border text-left transition-all ${
+          className={`p-3 sm:p-4 rounded-xl border text-left transition-all ${
             filter === 'all'
               ? 'bg-purple-50/80 border-purple-300 ring-2 ring-purple-500/20 shadow-xs'
               : 'bg-white border-gray-200 hover:border-purple-200 hover:bg-purple-50/30'
@@ -250,15 +250,15 @@ export function ProUsersManagement() {
             <span>Total PRO Users</span>
             <Sparkles className="w-4 h-4 text-purple-500" />
           </div>
-          <div className="text-2xl font-black text-gray-900">{stats.totalProUsers}</div>
-          <div className="text-[11px] text-gray-400 mt-1">All members with PRO records</div>
+          <div className="text-xl sm:text-2xl font-black text-gray-900">{stats.totalProUsers}</div>
+          <div className="text-[10px] sm:text-[11px] text-gray-400 mt-1 truncate">All members with PRO records</div>
         </button>
 
         {/* Active PRO Users */}
         <button
           type="button"
           onClick={() => setFilter('active')}
-          className={`p-4 rounded-xl border text-left transition-all ${
+          className={`p-3 sm:p-4 rounded-xl border text-left transition-all ${
             filter === 'active'
               ? 'bg-emerald-50/80 border-emerald-300 ring-2 ring-emerald-500/20 shadow-xs'
               : 'bg-white border-gray-200 hover:border-emerald-200 hover:bg-emerald-50/30'
@@ -268,15 +268,15 @@ export function ProUsersManagement() {
             <span>Active PRO</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="text-2xl font-black text-emerald-900">{stats.activeProUsers}</div>
-          <div className="text-[11px] text-gray-400 mt-1">Currently valid PRO perks</div>
+          <div className="text-xl sm:text-2xl font-black text-emerald-900">{stats.activeProUsers}</div>
+          <div className="text-[10px] sm:text-[11px] text-gray-400 mt-1 truncate">Currently valid PRO perks</div>
         </button>
 
         {/* Expiring Soon */}
         <button
           type="button"
           onClick={() => setFilter('expiring_soon')}
-          className={`p-4 rounded-xl border text-left transition-all ${
+          className={`p-3 sm:p-4 rounded-xl border text-left transition-all ${
             filter === 'expiring_soon'
               ? 'bg-amber-50/80 border-amber-300 ring-2 ring-amber-500/20 shadow-xs'
               : 'bg-white border-gray-200 hover:border-amber-200 hover:bg-amber-50/30'
@@ -286,15 +286,15 @@ export function ProUsersManagement() {
             <span>Expiring Soon</span>
             <Clock className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-2xl font-black text-amber-900">{stats.expiringSoonUsers}</div>
-          <div className="text-[11px] text-gray-400 mt-1">Expires within 3 days</div>
+          <div className="text-xl sm:text-2xl font-black text-amber-900">{stats.expiringSoonUsers}</div>
+          <div className="text-[10px] sm:text-[11px] text-gray-400 mt-1 truncate">Expires within 3 days</div>
         </button>
 
         {/* Expired PRO Users */}
         <button
           type="button"
           onClick={() => setFilter('expired')}
-          className={`p-4 rounded-xl border text-left transition-all ${
+          className={`p-3 sm:p-4 rounded-xl border text-left transition-all ${
             filter === 'expired'
               ? 'bg-red-50/80 border-red-300 ring-2 ring-red-500/20 shadow-xs'
               : 'bg-white border-gray-200 hover:border-red-200 hover:bg-red-50/30'
@@ -304,28 +304,28 @@ export function ProUsersManagement() {
             <span>Expired PRO</span>
             <XCircle className="w-4 h-4 text-red-500" />
           </div>
-          <div className="text-2xl font-black text-red-900">{stats.expiredProUsers}</div>
-          <div className="text-[11px] text-gray-400 mt-1">Revoked permissions</div>
+          <div className="text-xl sm:text-2xl font-black text-red-900">{stats.expiredProUsers}</div>
+          <div className="text-[10px] sm:text-[11px] text-gray-400 mt-1 truncate">Revoked permissions</div>
         </button>
 
         {/* Newly Upgraded Users */}
         <button
           type="button"
           onClick={() => setFilter('all')}
-          className="p-4 rounded-xl border text-left transition-all bg-white border-gray-200 hover:border-blue-200 hover:bg-blue-50/30 col-span-2 sm:col-span-1"
+          className="p-3 sm:p-4 rounded-xl border text-left transition-all bg-white border-gray-200 hover:border-blue-200 hover:bg-blue-50/30 col-span-2 sm:col-span-1"
         >
           <div className="flex items-center justify-between text-xs font-semibold text-blue-700 mb-1">
             <span>New Upgrades</span>
             <Plus className="w-4 h-4 text-blue-500" />
           </div>
-          <div className="text-2xl font-black text-blue-900">{stats.newlyUpgradedUsers}</div>
-          <div className="text-[11px] text-gray-400 mt-1">Activated in last 7 days</div>
+          <div className="text-xl sm:text-2xl font-black text-blue-900">{stats.newlyUpgradedUsers}</div>
+          <div className="text-[10px] sm:text-[11px] text-gray-400 mt-1 truncate">Activated in last 7 days</div>
         </button>
       </div>
 
       {/* 3. Search & Filter Bar */}
-      <div className="bg-white p-3.5 border border-gray-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
-        <div className="relative flex-1 max-w-md">
+      <div className="bg-white p-3 sm:p-3.5 border border-gray-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
+        <div className="relative flex-1 max-w-full md:max-w-md">
           <input
             type="search"
             value={search}
@@ -338,8 +338,8 @@ export function ProUsersManagement() {
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Status Filter */}
-          <div className="flex items-center gap-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg p-1">
-            <span className="text-gray-500 font-medium px-1 flex items-center gap-1">
+          <div className="flex items-center gap-1 text-xs bg-gray-50 border border-gray-200 rounded-lg p-1 overflow-x-auto max-w-full scrollbar-none">
+            <span className="text-gray-500 font-medium px-1 flex items-center gap-1 shrink-0">
               <Filter className="w-3.5 h-3.5" /> Filter:
             </span>
             {(['all', 'active', 'expiring_soon', 'expired'] as const).map((f) => (
@@ -347,7 +347,7 @@ export function ProUsersManagement() {
                 key={f}
                 type="button"
                 onClick={() => setFilter(f)}
-                className={`px-2.5 py-1 rounded-md capitalize font-semibold transition-all ${
+                className={`px-2.5 py-1 rounded-md capitalize font-semibold whitespace-nowrap shrink-0 transition-all ${
                   filter === f
                     ? 'bg-white text-gray-900 shadow-xs'
                     : 'text-gray-600 hover:text-gray-900'
@@ -359,7 +359,7 @@ export function ProUsersManagement() {
           </div>
 
           {/* Sort Selector */}
-          <div className="flex items-center gap-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
+          <div className="flex items-center gap-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 shrink-0">
             <ArrowUpDown className="w-3.5 h-3.5 text-gray-500" />
             <select
               value={sort}
@@ -377,8 +377,12 @@ export function ProUsersManagement() {
 
       {/* 4. PRO Users Management Table */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-xs">
+        <div className="md:hidden px-3.5 py-1.5 bg-amber-50/80 border-b border-amber-200/60 text-[11px] text-amber-900 flex items-center justify-between font-medium">
+          <span>Swipe table horizontally to see all columns & actions</span>
+          <span className="font-bold text-amber-700">&rarr;</span>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
+          <table className="w-full min-w-[700px] text-left text-xs sm:text-sm">
             <thead className="bg-gray-50/80 border-b border-gray-200 text-gray-500 uppercase tracking-wider text-[11px] font-semibold">
               <tr>
                 <th className="px-4 py-3">User</th>
@@ -568,12 +572,12 @@ export function ProUsersManagement() {
 
       {/* Subscription History Modal */}
       {historyModalUser && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
-                <History className="w-5 h-5 text-purple-600" />
-                <h3 className="font-bold text-gray-900">Subscription History</h3>
+                <History className="w-5 h-5 text-purple-600 shrink-0" />
+                <h3 className="font-bold text-gray-900 text-sm sm:text-base">Subscription History</h3>
               </div>
               <button
                 type="button"
@@ -584,12 +588,12 @@ export function ProUsersManagement() {
               </button>
             </div>
 
-            <div className="text-xs text-gray-600 bg-purple-50 p-3 rounded-xl border border-purple-100 flex items-center justify-between">
-              <div>
-                <div className="font-bold text-gray-900">{historyModalUser.name}</div>
-                <div>{historyModalUser.email}</div>
+            <div className="text-xs text-gray-600 bg-purple-50 p-3 rounded-xl border border-purple-100 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="font-bold text-gray-900 truncate">{historyModalUser.name}</div>
+                <div className="truncate">{historyModalUser.email}</div>
               </div>
-              <div className="text-right">
+              <div className="text-right shrink-0">
                 <span className="font-semibold text-purple-700">
                   {historyModalUser.isPro ? 'Active PRO' : 'Expired'}
                 </span>
@@ -655,21 +659,21 @@ export function ProUsersManagement() {
 
       {/* Action Modal (Renew, Extend, Expire early, Set dates) */}
       {actionModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <h3 className="font-bold text-gray-900 capitalize flex items-center gap-2">
+              <h3 className="font-bold text-gray-900 capitalize flex items-center gap-2 text-sm sm:text-base truncate">
                 {actionModal.type === 'expire_early' ? (
-                  <AlertTriangle className="w-5 h-5 text-red-500" />
+                  <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
                 ) : (
-                  <Sparkles className="w-5 h-5 text-amber-500" />
+                  <Sparkles className="w-5 h-5 text-amber-500 shrink-0" />
                 )}
-                {actionModal.type.replace('_', ' ')}: {actionModal.user.name}
+                <span className="truncate">{actionModal.type.replace('_', ' ')}: {actionModal.user.name}</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setActionModal(null)}
-                className="p-1.5 text-gray-400 hover:text-gray-600 rounded-md"
+                className="p-1.5 text-gray-400 hover:text-gray-600 rounded-md shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -734,7 +738,7 @@ export function ProUsersManagement() {
               <button
                 type="button"
                 onClick={() => setActionModal(null)}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg flex-1 sm:flex-initial text-center justify-center"
               >
                 Cancel
               </button>
@@ -742,7 +746,7 @@ export function ProUsersManagement() {
                 type="button"
                 onClick={executeAction}
                 disabled={busyId === actionModal.user.id}
-                className={`px-4 py-2 text-white text-xs font-semibold rounded-lg transition-all ${
+                className={`px-4 py-2 text-white text-xs font-semibold rounded-lg transition-all flex-1 sm:flex-initial text-center justify-center ${
                   actionModal.type === 'expire_early'
                     ? 'bg-red-600 hover:bg-red-700'
                     : 'bg-brand-600 hover:bg-brand-700'
@@ -757,14 +761,14 @@ export function ProUsersManagement() {
 
       {/* Manual PRO Upgrade Modal */}
       {manualUpgradeModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
           <form
             onSubmit={handleManualUpgrade}
-            className="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150"
+            className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90dvh] overflow-y-auto"
           >
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-500" />
+              <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm sm:text-base">
+                <Sparkles className="w-5 h-5 text-amber-500 shrink-0" />
                 Manual Campus PRO Upgrade
               </h3>
               <button
