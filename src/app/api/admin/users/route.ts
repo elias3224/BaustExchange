@@ -16,7 +16,13 @@ export async function GET(req: NextRequest) {
   try {
     const q = req.nextUrl.searchParams.get('q');
     const where: any = {};
-    if (q) where.OR = [{ name: { contains: q } }, { email: { contains: q } }];
+    if (q) {
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+        { studentId: { contains: q, mode: 'insensitive' } },
+      ];
+    }
 
     const users = await prisma.user.findMany({
       where,
@@ -31,6 +37,8 @@ export async function GET(req: NextRequest) {
         status: true,
         department: true,
         studentId: true,
+        adminPermissions: true,
+        isSuperAdmin: true,
         idCardStatus: true,
         idCardUrl: true,
         idCardRejectReason: true,

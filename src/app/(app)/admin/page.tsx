@@ -118,6 +118,7 @@ export default async function AdminPage() {
           id: user.id,
           name: user.name,
           email: user.email,
+          role: user.role,
           isSuperAdmin: (user as any).isSuperAdmin,
           adminPermissions: (user as any).adminPermissions || [],
         }}

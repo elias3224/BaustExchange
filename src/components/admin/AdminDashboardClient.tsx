@@ -29,6 +29,8 @@ import {
   Sparkles,
   Clock,
   ArrowRight,
+  UserPlus,
+  Loader2,
 } from 'lucide-react';
 
 interface AdminDashboardClientProps {
@@ -50,6 +52,7 @@ interface AdminDashboardClientProps {
     id: string;
     name?: string | null;
     email?: string | null;
+    role?: string | null;
     isSuperAdmin?: boolean;
     adminPermissions?: string[];
   };
@@ -86,6 +89,21 @@ export function AdminDashboardClient({
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditSearch, setAuditSearch] = useState('');
   const [selectedLogDetail, setSelectedLogDetail] = useState<any | null>(null);
+
+  // Make Admin Modal state
+  const [makeAdminModalOpen, setMakeAdminModalOpen] = useState(false);
+  const [makeAdminSearch, setMakeAdminSearch] = useState('');
+  const [makeAdminSearching, setMakeAdminSearching] = useState(false);
+  const [makeAdminResults, setMakeAdminResults] = useState<any[]>([]);
+  const [selectedUserToPromote, setSelectedUserToPromote] = useState<any | null>(null);
+  const [promotePermissions, setPromotePermissions] = useState<string[]>([
+    'manage_users',
+    'manage_payments',
+    'verify_students',
+    'manage_listings',
+    'manage_reports',
+    'view_analytics',
+  ]);
 
   const isSuperAdmin = currentUser.isSuperAdmin || currentUser.email === 'eliasahmad3224@gmail.com';
 
@@ -143,6 +161,102 @@ export function AdminDashboardClient({
       }
     } catch (err: any) {
       alert(err.message || 'Action failed');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const ALL_ADMIN_PERMISSIONS = [
+    { id: 'manage_users', label: 'Manage Users (Block, Unblock, Roles)' },
+    { id: 'manage_payments', label: 'Manage Payments (Approve/Reject)' },
+    { id: 'verify_students', label: 'Verify Student IDs' },
+    { id: 'manage_listings', label: 'Manage Listings (Approve/Remove)' },
+    { id: 'manage_reports', label: 'Manage Reports' },
+    { id: 'view_analytics', label: 'View Platform Analytics' },
+  ];
+
+  async function searchUsersForAdmin(query: string) {
+    setMakeAdminSearch(query);
+    if (!query.trim()) {
+      setMakeAdminResults([]);
+      return;
+    }
+    setMakeAdminSearching(true);
+    try {
+      const res = await fetch(`/api/admin/users?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMakeAdminResults(data.users || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setMakeAdminSearching(false);
+    }
+  }
+
+  function openPromoteModalForUser(u: any) {
+    setSelectedUserToPromote(u);
+    setPromotePermissions(
+      u.adminPermissions && u.adminPermissions.length > 0
+        ? u.adminPermissions
+        : ALL_ADMIN_PERMISSIONS.map((p) => p.id)
+    );
+    setMakeAdminModalOpen(true);
+  }
+
+  async function handleMakeAdmin(targetUser?: any) {
+    const userToPromote = targetUser || selectedUserToPromote;
+    if (!userToPromote) return;
+    setBusyId(`promote-${userToPromote.id}`);
+    try {
+      const res = await fetch(`/api/admin/users/${userToPromote.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role: 'admin',
+          adminPermissions: promotePermissions,
+          reason: `Promoted to Admin by ${currentUser.name || currentUser.email || 'Admin'}`,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || 'Failed to make admin');
+      } else {
+        setMakeAdminModalOpen(false);
+        setSelectedUserToPromote(null);
+        setMakeAdminSearch('');
+        setMakeAdminResults([]);
+        router.refresh();
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to make admin');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleRemoveAdmin(u: any) {
+    if (!confirm(`Are you sure you want to revoke admin rights for ${u.name || u.email}?`)) return;
+    setBusyId(`demote-${u.id}`);
+    try {
+      const res = await fetch(`/api/admin/users/${u.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role: 'student',
+          adminPermissions: [],
+          reason: `Admin rights revoked by ${currentUser.name || currentUser.email || 'Admin'}`,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || 'Failed to revoke admin');
+      } else {
+        router.refresh();
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to revoke admin');
     } finally {
       setBusyId(null);
     }
@@ -269,28 +383,26 @@ export function AdminDashboardClient({
               Dashboard
             </button>
             {isSuperAdmin && (
-              <>
-                <button
-                  onClick={() => {
-                    setActiveTab('logs');
-                    loadAuditLogs();
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shrink-0 flex items-center gap-1 ${
-                    activeTab === 'logs' ? 'bg-white text-purple-800 shadow-xs' : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <History className="w-3.5 h-3.5" /> Audit Logs
-                </button>
-                <button
-                  onClick={() => setActiveTab('permissions')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shrink-0 flex items-center gap-1 ${
-                    activeTab === 'permissions' ? 'bg-white text-purple-800 shadow-xs' : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Shield className="w-3.5 h-3.5" /> Admin Team
-                </button>
-              </>
+              <button
+                onClick={() => {
+                  setActiveTab('logs');
+                  loadAuditLogs();
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shrink-0 flex items-center gap-1 ${
+                  activeTab === 'logs' ? 'bg-white text-purple-800 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <History className="w-3.5 h-3.5" /> Audit Logs
+              </button>
             )}
+            <button
+              onClick={() => setActiveTab('permissions')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shrink-0 flex items-center gap-1 ${
+                activeTab === 'permissions' ? 'bg-white text-purple-800 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Shield className="w-3.5 h-3.5" /> Admin Team
+            </button>
             <Link
               href="/admin/pro-users"
               className="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shrink-0 flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs hover:from-amber-600 hover:to-rose-600"
@@ -722,15 +834,33 @@ export function AdminDashboardClient({
 
                             {/* User Actions */}
                             <div className="flex items-center gap-1.5 shrink-0 flex-wrap w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
-                              {isSuperAdmin && !isSuper && (
+                              {u.role === 'admin' ? (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      setEditingUserPerms(u);
+                                      setSelectedPerms(u.adminPermissions || []);
+                                    }}
+                                    className="px-2.5 py-1 text-xs font-semibold bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg"
+                                  >
+                                    Permissions
+                                  </button>
+                                  {!isSuper && !isSelf && (
+                                    <button
+                                      onClick={() => handleRemoveAdmin(u)}
+                                      disabled={busyId === `demote-${u.id}`}
+                                      className="px-2.5 py-1 text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-700 rounded-lg disabled:opacity-50"
+                                    >
+                                      Remove Admin
+                                    </button>
+                                  )}
+                                </>
+                              ) : (
                                 <button
-                                  onClick={() => {
-                                    setEditingUserPerms(u);
-                                    setSelectedPerms(u.adminPermissions || []);
-                                  }}
-                                  className="px-2.5 py-1 text-xs font-semibold bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg"
+                                  onClick={() => openPromoteModalForUser(u)}
+                                  className="px-2.5 py-1 text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-1 shadow-2xs"
                                 >
-                                  Permissions
+                                  <UserPlus className="w-3.5 h-3.5" /> Make Admin
                                 </button>
                               )}
 
@@ -752,7 +882,7 @@ export function AdminDashboardClient({
                                     </button>
                                   )}
 
-                                  {u.role !== 'teacher' && (
+                                  {u.role !== 'teacher' && u.role !== 'admin' && (
                                     <button
                                       onClick={() => handleAction(`/api/admin/users/${u.id}`, { role: 'teacher' })}
                                       className="px-2.5 py-1 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg"
@@ -874,13 +1004,27 @@ export function AdminDashboardClient({
       )}
 
       {/* Admin Permissions Tab */}
-      {activeTab === 'permissions' && isSuperAdmin && (
+      {activeTab === 'permissions' && (
         <div className="bg-white border border-gray-200 rounded-2xl p-3.5 sm:p-6 shadow-sm space-y-4">
-          <div>
-            <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
-              <Shield className="w-5 h-5 text-purple-600 shrink-0" /> Admin Team & Granular Permissions
-            </h2>
-            <p className="text-xs text-gray-500 mt-0.5">Assign or revoke specific administrator rights.</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-purple-600 shrink-0" /> Admin Team & Granular Permissions
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">Assign or revoke administrator rights and promote members.</p>
+            </div>
+            <button
+              onClick={() => {
+                setSelectedUserToPromote(null);
+                setMakeAdminSearch('');
+                setMakeAdminResults([]);
+                setPromotePermissions(ALL_ADMIN_PERMISSIONS.map((p) => p.id));
+                setMakeAdminModalOpen(true);
+              }}
+              className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-all"
+            >
+              <UserPlus className="w-4 h-4" /> + Make Admin
+            </button>
           </div>
 
           <div className="space-y-3">
@@ -888,6 +1032,7 @@ export function AdminDashboardClient({
               .filter((u) => u.role === 'admin')
               .map((u) => {
                 const isSuper = u.isSuperAdmin || u.email === 'eliasahmad3224@gmail.com';
+                const isSelf = u.id === currentUser.id;
                 return (
                   <div
                     key={u.id}
@@ -909,15 +1054,26 @@ export function AdminDashboardClient({
                     </div>
 
                     {!isSuper && (
-                      <button
-                        onClick={() => {
-                          setEditingUserPerms(u);
-                          setSelectedPerms(u.adminPermissions || []);
-                        }}
-                        className="w-full sm:w-auto px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-xs shrink-0 text-center"
-                      >
-                        Edit Rights
-                      </button>
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <button
+                          onClick={() => {
+                            setEditingUserPerms(u);
+                            setSelectedPerms(u.adminPermissions || []);
+                          }}
+                          className="flex-1 sm:flex-initial px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-xs shrink-0 text-center"
+                        >
+                          Edit Rights
+                        </button>
+                        {!isSelf && (
+                          <button
+                            onClick={() => handleRemoveAdmin(u)}
+                            disabled={busyId === `demote-${u.id}`}
+                            className="flex-1 sm:flex-initial px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl text-xs font-bold shrink-0 text-center transition-all disabled:opacity-50"
+                          >
+                            Remove Admin
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 );
@@ -1060,6 +1216,201 @@ export function AdminDashboardClient({
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Make Admin Modal */}
+      {makeAdminModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 max-h-[90dvh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-purple-50 text-purple-700 rounded-xl">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-base">Make User Admin</h3>
+                  <p className="text-xs text-gray-500">Promote a campus member to administrator</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setMakeAdminModalOpen(false);
+                  setSelectedUserToPromote(null);
+                  setMakeAdminSearch('');
+                  setMakeAdminResults([]);
+                }}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Step 1: Select User */}
+            {!selectedUserToPromote ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Search User to Promote</label>
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+                    <input
+                      type="text"
+                      value={makeAdminSearch}
+                      onChange={(e) => searchUsersForAdmin(e.target.value)}
+                      placeholder="Search name, email, or student ID..."
+                      className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                      autoFocus
+                    />
+                    {makeAdminSearching && (
+                      <Loader2 className="w-4 h-4 absolute right-3 top-3 text-purple-600 animate-spin" />
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  {(makeAdminResults.length > 0
+                    ? makeAdminResults
+                    : !makeAdminSearch
+                    ? initialUsers.filter((u) => u.role !== 'admin').slice(0, 8)
+                    : []
+                  ).map((u) => (
+                    <div
+                      key={u.id}
+                      className="p-2.5 border border-gray-200 rounded-xl hover:border-purple-300 hover:bg-purple-50/30 transition-all flex items-center justify-between gap-2"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <ProAvatar
+                          src={u.image}
+                          name={u.name}
+                          isPro={isActualProSubscription(u)}
+                          size="sm"
+                        />
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-gray-900 truncate">{u.name || 'User'}</div>
+                          <div className="text-[11px] text-gray-500 truncate">
+                            {u.email} {u.studentId ? `• ID: ${u.studentId}` : ''}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => openPromoteModalForUser(u)}
+                        className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold shrink-0"
+                      >
+                        Select
+                      </button>
+                    </div>
+                  ))}
+
+                  {makeAdminSearch && !makeAdminSearching && makeAdminResults.length === 0 && (
+                    <p className="text-xs text-gray-400 text-center py-4">No matching users found.</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Step 2: Configure Permissions & Confirm */
+              <div className="space-y-4">
+                <div className="p-3 bg-purple-50 border border-purple-100 rounded-xl flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <ProAvatar
+                      src={selectedUserToPromote.image}
+                      name={selectedUserToPromote.name}
+                      isPro={isActualProSubscription(selectedUserToPromote)}
+                      size="sm"
+                    />
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold text-purple-950 truncate">
+                        {selectedUserToPromote.name || 'User'}
+                      </div>
+                      <div className="text-xs text-purple-700 truncate">
+                        {selectedUserToPromote.email} {selectedUserToPromote.studentId ? `• ID: ${selectedUserToPromote.studentId}` : ''}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedUserToPromote(null)}
+                    className="text-xs text-purple-700 hover:text-purple-900 font-semibold underline shrink-0"
+                  >
+                    Change
+                  </button>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold text-gray-700">Granted Administrator Rights:</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPromotePermissions(ALL_ADMIN_PERMISSIONS.map((p) => p.id))}
+                        className="text-[11px] text-purple-600 hover:underline font-semibold"
+                      >
+                        Select All
+                      </button>
+                      <span className="text-gray-300">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setPromotePermissions([])}
+                        className="text-[11px] text-gray-500 hover:underline font-semibold"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                    {ALL_ADMIN_PERMISSIONS.map((perm) => {
+                      const checked = promotePermissions.includes(perm.id);
+                      return (
+                        <label key={perm.id} className="flex items-center gap-2.5 text-xs text-gray-700 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setPromotePermissions((prev) =>
+                                checked ? prev.filter((p) => p !== perm.id) : [...prev, perm.id]
+                              );
+                            }}
+                            className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                          />
+                          <span>{perm.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleMakeAdmin()}
+                    disabled={busyId === `promote-${selectedUserToPromote.id}`}
+                    className="py-2.5 px-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-bold text-xs shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {busyId === `promote-${selectedUserToPromote.id}` ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Shield className="w-4 h-4" /> Confirm & Make Admin
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMakeAdminModalOpen(false);
+                      setSelectedUserToPromote(null);
+                    }}
+                    className="py-2.5 px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xs"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
